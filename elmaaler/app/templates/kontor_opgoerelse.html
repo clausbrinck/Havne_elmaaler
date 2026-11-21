@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}Opgørelse {{ maaned | maaned_navn }}{% endblock %}
+{% block indhold %}
+<h1>Opgørelse – {{ maaned | maaned_navn }}</h1>
+
+<div class="faner">
+  {% for m in maaneder[:14] %}<a href="?maaned={{ m }}" class="{{ 'aktiv' if m == maaned }}">{{ m | maaned_navn }}</a>{% endfor %}
+</div>
+
+<div class="kort">
+  <div class="maaler-hoved">
+    <div>
+      {% if indevaerende %}<strong>Foreløbig</strong> – indeværende måned, opgjort til nu ({{ nu | tid }}).
+      {% elif laast %}<strong>Låst</strong> opgørelse (beregnet {{ laast_ts | tid }}).
+      {% else %}<strong>Ikke låst</strong> – beregnet ud fra gemte aflæsninger.{% endif %}
+      {% if not afregnes %}<br><span class="muted">Måneden ligger uden for vinterafregningen – der vises forbrug, men ingen pris.</span>{% endif %}
+    </div>
+    <div class="linje" style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="knap" href="{{ url_for('kontor_opgoerelse_csv', maaned=maaned) }}">Hent CSV (Excel)</a>
+      <a class="knap sek" href="{{ url_for('kontor_vinter_csv', aar=(maaned[:4]|int if maaned[5:]|int >= 11 else maaned[:4]|int - 1)) }}">Hele vinterperioden pr. bruger</a>
+      {% if not indevaerende %}
+      <form method="post" data-bekraeft="Genberegn og lås opgørelsen for {{ maaned | maaned_navn }}? Evt. tidligere låste tal overskrives.">
+        <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="maaned" value="{{ maaned }}">
+        <button class="sek" name="handling" value="laas">{{ 'Genberegn' if laast else 'Lås måned' }}</button></form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if afregnes %}
+<div class="kort">
+  <h2>Fordeling på forbrugsgrupper</h2>
+  <table>
+    <thead><tr><th>Gruppe</th><th class="n">Pris</th><th class="n">Antal</th><th class="n">kWh</th><th class="n">Beløb</th></tr></thead>
+    <tbody>
+    {% for nr, g in fordeling.items() %}
+      <tr><td>{{ gr.gruppe(nr, g.label) }}</td><td class="n">{{ g.pris | dk(0) }} kr</td><td class="n">{{ g.antal }}</td><td class="n">{{ g.kwh | dk(0) }}</td><td class="n">{{ g.beloeb | dk(0) }} kr</td></tr>
+    {% endfor %}
+    <tr><th>I alt</th><th></th><th class="n">{{ fordeling.values() | sum(attribute='antal') }}</th><th class="n">{{ fordeling.values() | sum(attribute='kwh') | dk(0) }}</th><th class="n">{{ fordeling.values() | sum(attribute='beloeb') | dk(0) }} kr</th></tr>
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="kort">
+  <div class="maaler-hoved"><h2>{{ rows | length }} rækker</h2>
+    <form class="linje" onsubmit="return false">
+      <select data-vis-filter="opgtabel" style="width:auto"><option value="">Alle grupper</option>
+        {% for nr, g in fordeling.items() %}<option value="g{{ nr }}">{{ g.label }}</option>{% endfor %}
+        <option value="ikke-tildelt">Ikke tildelt</option></select>
+      <input type="search" placeholder="Søg…" data-filter="opgtabel" style="width:220px"></form></div>
+  <div class="tabel-wrap"><table id="opgtabel">
+    <thead><tr><th>Navn</th><th class="skjul-mobil">Email</th><th class="skjul-mobil">Båd</th><th>Måler</th><th class="skjul-mobil">Periode</th><th class="n">kWh</th><th>Gruppe</th><th class="n">Pris</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr data-tags="g{{ r.gruppe }}{{ ' ikke-tildelt' if r.bruger_id is none }}">
+        <td>{% if r.bruger_id %}<a href="{{ url_for('kontor_bruger', bid=r.bruger_id) }}">{{ r.navn or r.email }}</a>{% else %}<span class="muted">{{ r.navn }}</span>{% endif %}</td>
+        <td class="skjul-mobil">{{ r.email }}</td><td class="skjul-mobil">{{ r.baad }}</td>
+        <td><a href="{{ url_for('kontor_maaler', nr=r.maaler_id) }}">{{ '%03d' % r.maaler_id }}</a> <span class="muted">{{ r.placering }}</span></td>
+        <td class="skjul-mobil muted">{{ r.fra | dato }} – {{ r.til | dato }}</td>
+        <td class="n">{{ r.kwh | dk(1) }}</td>
+        <td>{{ gr.gruppe(r.gruppe, r.label) }}</td>
+        <td class="n">{{ (r.pris | dk(0)) ~ ' kr' if r.pris is not none and r.bruger_id else '–' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="muted">Forbruget afrundes til hele kWh før placering i gruppe. Skifter en måler bruger i løbet af måneden, opgøres hver bruger for sin del af måneden.</p>
+</div>
+{% endblock %}

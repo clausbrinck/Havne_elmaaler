@@ -1,0 +1,50 @@
+# Dockge stack: /opt/stacks/elmaaler/compose.yaml
+# The program code must be in /opt/stacks/elmaaler/elmaaler/ (folder with Dockerfile).
+# All settings are edited in Dockge's ".env" box below the compose editor.
+services:
+  elmaaler:
+    build: ./elmaaler
+    image: elmaaler:latest
+    container_name: elmaaler
+    restart: unless-stopped
+    ports:
+      - "${PORT_HOST:-8000}:8000"
+    environment:
+      KLUB_NAVN: ${KLUB_NAVN:-Aabenraa Sejl Club}
+      BASE_URL: ${BASE_URL:-http://localhost:8000}
+      TZ: Europe/Copenhagen
+      METER_COUNT: ${METER_COUNT:-200}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      # Home Assistant
+      SOURCE: ${SOURCE:-homeassistant}
+      HA_URL: ${HA_URL}
+      HA_TOKEN: ${HA_TOKEN}
+      # Meter entity names default to sensor.elmaaler_001_energy / _power / _linkquality
+      HA_BRIDGE_ENTITY: ${HA_BRIDGE_ENTITY:-binary_sensor.zigbee2mqtt_bridge_connection_state}
+      POLL_SECONDS: ${POLL_SECONDS:-30}
+      # Email
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURITY: ${SMTP_SECURITY:-starttls}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-elmaaler@aabenraa-sejlclub.dk}
+      # Backup
+      BACKUP_TIME: ${BACKUP_TIME:-03:00}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-30}
+      BACKUP_EXTRA_DIR: ${BACKUP_EXTRA_DIR:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # Test without meters: SOURCE=sim and SIM_BACKFILL_DAYS=30
+      SIM_BACKFILL_DAYS: ${SIM_BACKFILL_DAYS:-0}
+    volumes:
+      - elmaaler-data:/data
+      # Extra backup copy on USB/NAS: uncomment and set BACKUP_EXTRA_DIR=/backup-usb
+      # - /mnt/usb-backup:/backup-usb
+    # If HA runs on this same host with network_mode: host, you can use
+    # HA_URL=http://host.docker.internal:8123 and uncomment:
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+
+volumes:
+  elmaaler-data:

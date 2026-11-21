@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}Overblik{% endblock %}
+{% block indhold %}
+<h1>Overblik – alle målere</h1>
+{% if not ha.ok %}<div class="flash fejl">Ingen forbindelse til Home Assistant: {{ ha.fejl }}</div>{% endif %}
+
+<div class="gitter" data-live="{{ url_for('api_live', alle=1) }}">
+  <div class="tal"><div class="v"><span data-total-kw>{{ tal.effekt_kw | dk(2) }}</span> <small>kW</small></div><div class="l">Samlet effekt lige nu</div></div>
+  <div class="tal"><div class="v">{{ tal.i_dag | dk(0) }} <small>kWh</small></div><div class="l">Forbrug i dag</div></div>
+  <div class="tal"><div class="v">{{ tal.maaned | dk(0) }} <small>kWh</small></div><div class="l">Forbrug i {{ maaned | maaned_navn }}</div></div>
+  <div class="tal ok"><div class="v">{{ tal.online }}</div><div class="l">Målere online</div></div>
+  <div class="tal {{ 'fejl' if tal.offline else '' }}"><div class="v">{{ tal.offline }}</div><div class="l">Målere offline</div></div>
+  <div class="tal"><div class="v">{{ tal.tildelt }} <small>/ {{ tabel | length }}</small></div><div class="l">Tildelte målere</div></div>
+</div>
+
+<div class="gitter2">
+  <div class="kort"><h2>Samlet effekt, sidste døgn (kW, gns. pr. 15 min)</h2>{{ gr.linje(effektserie, 'kW', 170, 16) }}</div>
+  <div class="kort"><h2>Samlet forbrug pr. dag i {{ maaned | maaned_navn }} (kWh)</h2>{{ gr.soejler(dagserie, 'kWh', 170, 2 if dagserie|length > 16 else 1) }}</div>
+</div>
+
+<div class="kort">
+  <div class="maaler-hoved">
+    <h2>Målere</h2>
+    <form class="linje" onsubmit="return false">
+      <select data-vis-filter="maalertabel" style="width:auto">
+        <option value="">Alle</option><option value="online">Online</option><option value="offline">Offline</option>
+        <option value="ukendt">Ukendt (aldrig set)</option><option value="tildelt">Tildelt</option><option value="ledig">Ledig</option>
+      </select>
+      <input type="search" placeholder="Søg måler, navn, placering…" data-filter="maalertabel" style="width:240px">
+    </form>
+  </div>
+  <div class="tabel-wrap"><table id="maalertabel">
+    <thead><tr><th>Måler</th><th>Placering</th><th>Bruger</th><th class="skjul-mobil">Tildelt fra</th><th>Status</th>
+      <th class="n">Effekt W</th><th class="n">kWh {{ maaned[5:] }}/{{ maaned[:4] }}</th><th>Gruppe</th><th class="n skjul-mobil">Tæller kWh</th><th class="skjul-mobil">Signal</th></tr></thead>
+    <tbody>
+    {% for r in tabel %}
+      <tr data-tags="{{ r.tilstand }} {{ 'tildelt' if r.t else 'ledig' }}" {% if not r.m.aktiv %}style="opacity:.5"{% endif %}>
+        <td><a href="{{ url_for('kontor_maaler', nr=r.m.id) }}"><strong>{{ '%03d' % r.m.id }}</strong></a></td>
+        <td>{{ r.m.placering }}</td>
+        <td>{% if r.t %}<a href="{{ url_for('kontor_bruger', bid=r.t.bruger_id) }}">{{ r.t.navn or r.t.email }}</a>{% else %}<span class="muted">ledig</span>{% endif %}</td>
+        <td class="skjul-mobil">{{ r.t.start_dato | dato if r.t else '' }}</td>
+        <td>{{ gr.status(r.tilstand, r.m.id) }}</td>
+        <td class="n" data-effekt="{{ r.m.id }}">{{ r.m.effekt_w | dk(0) if r.m.tilgaengelig else '–' }}</td>
+        <td class="n">{{ r.kwh | dk(1) }}</td>
+        <td>{% if r.kwh > 0 or r.t %}{{ gr.gruppe(r.kat.gruppe, r.kat.label) }}{% endif %}</td>
+        <td class="n skjul-mobil">{{ r.m.energi_kwh | dk(1) }}</td>
+        <td class="skjul-mobil">{{ gr.lqi(r.m.linkquality) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

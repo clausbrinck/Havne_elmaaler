@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}{{ b.navn or b.email }}{% endblock %}
+{% block indhold %}
+<p><a href="{{ url_for('kontor_brugere') }}">← Brugere</a></p>
+<h1>{{ b.navn or b.email }} {% if b.rolle == 'kontor' %}<span class="badge kontor">havnekontor</span>{% endif %}</h1>
+
+<div class="gitter2">
+<div class="kort">
+  <h2>Oplysninger</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="gem">
+    <div class="felter">
+      <div class="felt"><label>Email</label><input type="email" name="email" value="{{ b.email }}" required></div>
+      <div class="felt"><label>Navn</label><input type="text" name="navn" value="{{ b.navn }}"></div>
+      <div class="felt"><label>Båd</label><input type="text" name="baad" value="{{ b.baad }}"></div>
+      <div class="felt"><label>Telefon</label><input type="text" name="telefon" value="{{ b.telefon }}"></div>
+      <div class="felt"><label>Rolle</label><select name="rolle">
+        <option value="bruger" {{ 'selected' if b.rolle == 'bruger' }}>Bruger</option>
+        <option value="kontor" {{ 'selected' if b.rolle == 'kontor' }}>Havnekontor</option></select></div>
+    </div>
+    <label class="check"><input type="checkbox" name="aktiv" {{ 'checked' if b.aktiv }}> <span>Aktiv (kan logge ind og få mails)</span></label>
+    <button>Gem</button>
+  </form>
+  <p class="muted">Oprettet {{ b.oprettet | tid }} · sidste login {{ b.sidste_login | siden }} ·
+    emails: {% for f, n in [('mail_advarsel','advarsel'),('mail_dag','døgn'),('mail_uge','uge'),('mail_maaned','måned'),('mail_offline','offline')] %}{% if b[f] %}{{ n }} {% endif %}{% endfor %}</p>
+</div>
+
+<div class="kort">
+  <h2>Adgang</h2>
+  <form method="post" class="linje" style="margin-bottom:10px">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <button name="handling" value="invitation" class="sek">Send invitation</button>
+    <button name="handling" value="nulstil" class="sek">Send nulstil-link</button>
+  </form>
+  <form method="post" class="linje">
+    <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="kode">
+    <div style="flex:1"><label>Sæt ny adgangskode</label><input type="password" name="kode" autocomplete="new-password" minlength="8" required></div>
+    <button>Sæt kode</button>
+  </form>
+  <p class="muted">{{ 'Brugeren har en adgangskode.' if b.pw_hash else 'Brugeren har endnu ikke valgt adgangskode.' }}</p>
+</div>
+</div>
+
+<div class="kort">
+  <h2>Målere</h2>
+  <table>
+    <thead><tr><th>Måler</th><th>Placering</th><th>Fra</th><th>Ophørt pr.</th><th class="n">kWh {{ maaned | maaned_navn }}</th><th>Gruppe</th></tr></thead>
+    <tbody>
+    {% for t in tild %}
+      {% set s = status.get(t.maaler_id) if not t.slut_dato else none %}
+      <tr><td><a href="{{ url_for('kontor_maaler', nr=t.maaler_id) }}">{{ '%03d' % t.maaler_id }}</a></td><td>{{ t.placering }}</td>
+        <td>{{ t.start_dato | dato }}</td><td>{{ t.slut_dato | dato if t.slut_dato else 'aktiv' }}</td>
+        <td class="n">{{ s.kwh | dk(1) if s else '' }}</td><td>{% if s %}{{ gr.gruppe(s.gruppe, s.label) }}{% endif %}</td></tr>
+    {% else %}<tr><td colspan="6" class="muted">Ingen målere.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <form method="post" class="linje" style="margin-top:12px">
+    <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="tildel">
+    <div><label>Tildel måler nr.</label><input type="number" name="maaler" min="1" required style="width:110px"></div>
+    <div><label>Fra dato</label><input type="date" name="start_dato" value="{{ i_dag }}" required></div>
+    <button>Tildel</button>
+  </form>
+</div>
+
+<div class="kort">
+  <h2>Afsluttede måneder</h2>
+  <table>
+    <thead><tr><th>Måned</th><th>Måler</th><th class="n">kWh</th><th>Gruppe</th><th class="n">Pris</th></tr></thead>
+    <tbody>
+    {% for h in historik %}
+      <tr><td>{{ h.maaned | maaned_navn }}</td><td>{{ '%03d' % h.maaler_id }}</td><td class="n">{{ h.kwh | dk(1) }}</td>
+        <td>{% if h.afregnes %}{{ gr.gruppe(h.gruppe, h.label) }}{% else %}<span class="muted">ikke afregnet</span>{% endif %}</td>
+        <td class="n">{{ (h.pris | dk(0)) ~ ' kr' if h.pris is not none else '–' }}</td></tr>
+    {% else %}<tr><td colspan="5" class="muted">Ingen endnu.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

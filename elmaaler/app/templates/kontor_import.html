@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block titel %}Import{% endblock %}
+{% block indhold %}
+<p><a href="{{ url_for('kontor_brugere') }}">← Brugere</a></p>
+<h1>Importér målere og brugere fra CSV</h1>
+<div class="kort">
+  <p>Første linje skal være kolonnenavne. Semikolon eller komma som skilletegn (Excel "CSV UTF-8" virker).
+    Kun <code>maaler</code> er påkrævet – resten er valgfrit:</p>
+  <pre><code>maaler;placering;email;navn;baad;telefon;start_dato
+1;S01-U1;hans@eksempel.dk;Hans Hansen;Havørnen;20202020;2026-11-01
+2;S01-U2;;;;;
+3;S01-U3;grete@eksempel.dk;Grete Jensen;Måsen;;2026-11-01</code></pre>
+  <ul class="muted">
+    <li>Findes brugeren (samme email), genbruges den. Ellers oprettes en ny.</li>
+    <li>Er måleren allerede tildelt en anden, afsluttes den tildeling pr. <code>start_dato</code> (standard: i dag).</li>
+    <li>Rækker uden email opdaterer kun placeringen.</li>
+  </ul>
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <div class="felt"><input type="file" name="fil" accept=".csv,text/csv" required></div>
+    <label class="check"><input type="checkbox" name="inviter"> <span>Send invitation til nye brugere</span></label>
+    <button>Importér</button>
+  </form>
+</div>
+{% if resultat %}
+<div class="kort">
+  <h2>Resultat</h2>
+  <p>{{ resultat.ok }} rækker importeret, {{ resultat.nye }} nye brugere.</p>
+  {% if resultat.fejl %}<div class="flash fejl">{% for f in resultat.fejl %}{{ f }}<br>{% endfor %}</div>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

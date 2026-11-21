@@ -1,0 +1,15 @@
+services:
+  elmaaler:
+    build: ./elmaaler
+    container_name: elmaaler
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data                 # database, backups og hemmelig nøgle
+      # - /mnt/usb-backup:/backup-usb  # ekstra backup-placering (sæt BACKUP_EXTRA_DIR=/backup-usb)
+    # Kører Home Assistant på samme maskine i Docker med network_mode: host,
+    # så brug HA_URL=http://host.docker.internal:8123 og fjern kommentaren her:
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"

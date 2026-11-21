@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}Min side{% endblock %}
+{% block indhold %}
+<h1>Hej {{ bruger.navn or bruger.email }}</h1>
+
+{% if not kort %}
+<div class="kort"><p>Du har ingen måler tildelt i øjeblikket. Kontakt havnekontoret, hvis det er en fejl.</p></div>
+{% endif %}
+
+<div data-live="{{ url_for('api_live') }}">
+{% for k in kort %}
+<div class="kort">
+  <div class="maaler-hoved">
+    <h2>Måler {{ '%03d' % k.t.maaler_id }}{% if k.t.placering %} · {{ k.t.placering }}{% endif %}</h2>
+    <span>{{ gr.status('online' if k.st.tilgaengelig else ('offline' if k.st.sidst_set else 'ukendt'), k.t.maaler_id) }}
+      <span class="muted">opdateret <span data-sidst="{{ k.t.maaler_id }}">{{ k.st.sidst_set | siden }}</span></span></span>
+  </div>
+  <div class="gitter" style="margin-top:8px">
+    <div class="tal"><div class="v"><span data-effekt="{{ k.t.maaler_id }}">{{ k.st.effekt_w | dk(0) if k.st.tilgaengelig else '–' }}</span> <small>W</small></div><div class="l">Aktuel effekt</div></div>
+    <div class="tal"><div class="v">{{ k.i_dag | dk(1) }} <small>kWh</small></div><div class="l">I dag</div></div>
+    <div class="tal"><div class="v">{{ k.m.kwh | dk(1) }} <small>kWh</small></div><div class="l">Denne måned ({{ maaned | maaned_navn }})</div></div>
+    <div class="tal"><div class="v">{{ k.total_siden_start | dk(0) }} <small>kWh</small></div><div class="l">Total siden {{ k.t.start_dato | dato }}</div></div>
+  </div>
+
+  {% if afregnes %}
+  <div>
+    <strong>Forbrugsgruppe denne måned:</strong> {{ gr.gruppe(k.m.gruppe, k.m.label) }}
+    &nbsp;<strong>{{ k.m.pris | dk(0) }} kr</strong>
+    {% if k.m.graense %}
+      {% set pct = [k.m.kwh / k.m.graense * 100, 100] | min %}
+      <div class="bar {{ 'adv' if pct >= 90 }}"><div style="width:{{ pct }}%"></div></div>
+      <div class="muted">{{ k.m.kwh | dk(1) }} af {{ k.m.graense }} kWh før næste gruppe ({{ k.m.naeste.label }}, {{ k.m.naeste.pris | dk(0) }} kr).
+        Prognose for hele måneden: ca. {{ k.m.prognose | dk(0) }} kWh → {{ k.m.prognose_kat.label }}.</div>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="muted">{{ maaned | maaned_navn | capitalize }} ligger uden for vinterafregningen (november–marts).</p>
+  {% endif %}
+
+  <h3>Forbrug pr. dag i {{ maaned | maaned_navn }}</h3>
+  {{ gr.soejler(k.serie, 'kWh', 160, 2 if k.serie|length > 16 else 1) }}
+  <p class="muted">Tællerstand: {{ k.st.energi_kwh | dk(2) }} kWh</p>
+</div>
+{% endfor %}
+</div>
+
+<div class="gitter2">
+  <div class="kort">
+    <h2>Emails</h2>
+    <form method="post" action="{{ url_for('mine_emails') }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label class="check"><input type="checkbox" name="mail_advarsel" {{ 'checked' if bruger.mail_advarsel }}> <span>Advarsel når jeg nærmer mig næste forbrugsgruppe</span></label>
+      <label class="check"><input type="checkbox" name="mail_dag" {{ 'checked' if bruger.mail_dag }}> <span>Opgørelse hvert døgn</span></label>
+      <label class="check"><input type="checkbox" name="mail_uge" {{ 'checked' if bruger.mail_uge }}> <span>Opgørelse hver uge (mandag)</span></label>
+      <label class="check"><input type="checkbox" name="mail_maaned" {{ 'checked' if bruger.mail_maaned }}> <span>Opgørelse hver måned</span></label>
+      <label class="check"><input type="checkbox" name="mail_offline" {{ 'checked' if bruger.mail_offline }}> <span>Besked hvis forbindelsen til min måler har været væk i mere end en time</span></label>
+      <button>Gem</button>
+    </form>
+    <p class="muted">Mails sendes til {{ bruger.email }} – <a href="{{ url_for('min_konto') }}">skift email</a>.</p>
+  </div>
+
+  <div class="kort">
+    <h2>Forbrugsgrupper (november–marts)</h2>
+    <table>
+      <thead><tr><th>Forbrug pr. måned</th><th class="n">Pris pr. måned</th></tr></thead>
+      <tbody>{% for g in kategorier %}<tr><td>{{ gr.gruppe(g.nr, g.label) }}</td><td class="n">{{ g.pris | dk(0) }} kr</td></tr>{% endfor %}</tbody>
+    </table>
+    <p class="muted">Hver måned placeres båden i den gruppe, der svarer til månedens forbrug. Det samlede beløb opkræves ved standerhejsning.</p>
+  </div>
+</div>
+
+<div class="kort">
+  <h2>Tidligere måneder</h2>
+  {% if historik %}
+  <div class="tabel-wrap"><table>
+    <thead><tr><th>Måned</th><th>Måler</th><th class="skjul-mobil">Periode</th><th class="n">kWh</th><th>Gruppe</th><th class="n">Pris</th></tr></thead>
+    <tbody>
+    {% for h in historik %}
+      <tr><td>{{ h.maaned | maaned_navn }}</td><td>{{ '%03d' % h.maaler_id }}</td>
+        <td class="skjul-mobil muted">{{ h.fra_dato | dato }} – {{ h.til_dato | dato }}</td>
+        <td class="n">{{ h.kwh | dk(1) }}</td>
+        <td>{% if h.afregnes %}{{ gr.gruppe(h.gruppe, h.label) }}{% else %}<span class="muted">ikke afregnet</span>{% endif %}</td>
+        <td class="n">{{ (h.pris | dk(0)) ~ ' kr' if h.pris is not none else '–' }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">Ingen afsluttede måneder endnu.</p>{% endif %}
+</div>
+{% endblock %}

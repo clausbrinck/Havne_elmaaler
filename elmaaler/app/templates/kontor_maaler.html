@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}Måler {{ '%03d' % m.id }}{% endblock %}
+{% block indhold %}
+<p><a href="{{ url_for('kontor') }}">← Overblik</a></p>
+<h1>Elmåler NR. {{ '%03d' % m.id }}{% if m.placering %} · {{ m.placering }}{% endif %}</h1>
+
+<div class="gitter">
+  <div class="tal"><div class="v">{{ gr.status('online' if m.tilgaengelig else ('offline' if m.sidst_set else 'ukendt')) }}</div><div class="l">Sidst set {{ m.sidst_set | siden }}{% if m.offline_siden %} · offline siden {{ m.offline_siden | tid }}{% endif %}</div></div>
+  <div class="tal"><div class="v">{{ m.effekt_w | dk(0) if m.tilgaengelig else '–' }} <small>W</small></div><div class="l">Aktuel effekt</div></div>
+  <div class="tal"><div class="v">{{ kwh | dk(1) }} <small>kWh</small></div><div class="l">{{ maaned | maaned_navn }} · {{ gr.gruppe(kat.gruppe, kat.label) }}</div></div>
+  <div class="tal"><div class="v">{{ m.energi_kwh | dk(2) }} <small>kWh</small></div><div class="l">Tællerstand</div></div>
+  <div class="tal"><div class="v">{{ gr.lqi(m.linkquality) }}</div><div class="l">Zigbee-signal (linkquality)</div></div>
+</div>
+
+<div class="kort"><h2>Forbrug pr. dag, sidste 30 dage (kWh)</h2>{{ gr.soejler(serie, 'kWh', 160, 3) }}</div>
+
+<div class="gitter2">
+<div class="kort">
+  <h2>Tildeling</h2>
+  {% set aktiv = hist | selectattr('slut_ts', 'none') | list %}
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="tildel">
+    <p class="muted">{% if aktiv %}Nuværende tildeling til {{ aktiv[0].navn or aktiv[0].email }} afsluttes automatisk pr. den nye startdato.{% else %}Måleren er ledig.{% endif %}</p>
+    <div class="felt"><label>Eksisterende bruger</label>
+      <select name="bruger_id"><option value="">– vælg, eller opret ny nedenfor –</option>
+        {% for b in brugere %}<option value="{{ b.id }}">{{ b.navn or '(uden navn)' }} – {{ b.email }}</option>{% endfor %}
+      </select></div>
+    <div class="felter">
+      <div class="felt"><label>…eller ny brugers email</label><input type="email" name="email"></div>
+      <div class="felt"><label>Navn</label><input type="text" name="navn"></div>
+      <div class="felt"><label>Startdato</label><input type="date" name="start_dato" value="{{ i_dag }}" required></div>
+    </div>
+    <button>Tildel måler</button>
+  </form>
+
+  <h3>Historik</h3>
+  <table>
+    <thead><tr><th>Bruger</th><th>Fra</th><th>Ophørt pr.</th><th></th></tr></thead>
+    <tbody>
+    {% for t in hist %}
+      <tr><td><a href="{{ url_for('kontor_bruger', bid=t.bruger_id) }}">{{ t.navn or t.email }}</a></td>
+        <td>{{ t.start_dato | dato }}</td>
+        <td>{% if t.slut_dato %}{{ t.slut_dato | dato }}{% else %}
+          <form method="post" class="linje">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="afslut">
+            <input type="hidden" name="tildeling_id" value="{{ t.id }}">
+            <input type="date" name="slut_dato" value="{{ i_dag }}" style="width:150px"><button class="sek lille">Afslut</button>
+          </form>{% endif %}</td>
+        <td><form method="post" data-bekraeft="Slet tildelingen helt? Brug kun hvis den er oprettet ved en fejl.">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="slet_tildeling">
+            <input type="hidden" name="tildeling_id" value="{{ t.id }}"><button class="fare lille">Slet</button></form></td></tr>
+    {% else %}<tr><td colspan="4" class="muted">Aldrig tildelt.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="kort">
+  <h2>Måler-oplysninger</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="gem">
+    <div class="felt"><label>Placering (stander-udtag, fx S12-U3)</label><input type="text" name="placering" value="{{ m.placering }}"></div>
+    <div class="felt"><label>Note</label><textarea name="note">{{ m.note }}</textarea></div>
+    <label class="check"><input type="checkbox" name="aktiv" {{ 'checked' if m.aktiv }}> <span>Aktiv (inaktive målere giver ikke offline-varsler)</span></label>
+    <button>Gem</button>
+  </form>
+  <h3>Seneste aflæsninger</h3>
+  <table><thead><tr><th>Tid</th><th class="n">Tæller kWh</th><th class="n">Δ kWh</th></tr></thead>
+    <tbody>{% for a in aflaes %}<tr><td>{{ a.ts | tid }}</td><td class="n">{{ a.energi_kwh | dk(3) }}</td><td class="n">{{ a.delta_kwh | dk(3) }}</td></tr>{% endfor %}</tbody></table>
+</div>
+</div>
+{% endblock %}

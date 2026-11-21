@@ -1,0 +1,47 @@
+{# Simple SVG-grafer uden JavaScript-biblioteker. data = liste af (etiket, værdi) #}
+{% macro soejler(data, enhed='kWh', h=170, hver=1) %}
+{% set W = 640 %}{% set top = 14 %}{% set bund = 22 %}{% set venstre = 34 %}
+{% set vals = data | map('last') | list %}
+{% set maks = [vals | max if vals else 0, 0.1] | max %}
+{% set n = [data | length, 1] | max %}
+{% set bw = (W - venstre) / n %}
+<svg class="graf" viewBox="0 0 {{ W }} {{ h }}" role="img">
+  {% for f in [0, 0.5, 1] %}
+    {% set y = top + (h - top - bund) * (1 - f) %}
+    <line class="akse" x1="{{ venstre }}" x2="{{ W }}" y1="{{ y }}" y2="{{ y }}"/>
+    <text x="{{ venstre - 4 }}" y="{{ y + 3 }}" text-anchor="end">{{ (maks * f) | dk(0 if maks >= 10 else 1) }}</text>
+  {% endfor %}
+  {% for lab, v in data %}
+    {% set bh = (h - top - bund) * v / maks %}
+    <rect class="s" x="{{ venstre + loop.index0 * bw + bw * 0.15 }}" y="{{ h - bund - bh }}" width="{{ bw * 0.7 }}" height="{{ [bh, 0] | max }}" rx="2"><title>{{ lab }}: {{ v | dk(1) }} {{ enhed }}</title></rect>
+    {% if loop.index0 % hver == 0 %}<text x="{{ venstre + loop.index0 * bw + bw / 2 }}" y="{{ h - 7 }}" text-anchor="middle">{{ lab }}</text>{% endif %}
+  {% endfor %}
+</svg>
+{% endmacro %}
+
+{% macro linje(data, enhed='kW', h=170, hver=8) %}
+{% set W = 640 %}{% set top = 14 %}{% set bund = 22 %}{% set venstre = 34 %}
+{% set vals = data | map('last') | list %}
+{% set maks = [vals | max if vals else 0, 0.1] | max %}
+{% set n = [data | length - 1, 1] | max %}
+{% set ns = namespace(p='') %}
+{% for lab, v in data %}{% set ns.p = ns.p ~ (venstre + loop.index0 * (W - venstre) / n) ~ ',' ~ (top + (h - top - bund) * (1 - v / maks)) ~ ' ' %}{% endfor %}
+<svg class="graf" viewBox="0 0 {{ W }} {{ h }}" role="img">
+  {% for f in [0, 0.5, 1] %}
+    {% set y = top + (h - top - bund) * (1 - f) %}
+    <line class="akse" x1="{{ venstre }}" x2="{{ W }}" y1="{{ y }}" y2="{{ y }}"/>
+    <text x="{{ venstre - 4 }}" y="{{ y + 3 }}" text-anchor="end">{{ (maks * f) | dk(0 if maks >= 10 else 1) }}</text>
+  {% endfor %}
+  {% if data %}
+  <polygon class="flade" points="{{ venstre }},{{ h - bund }} {{ ns.p }}{{ W }},{{ h - bund }}"/>
+  <polyline class="lin" points="{{ ns.p }}"/>
+  {% for lab, v in data %}{% if loop.index0 % hver == 0 %}<text x="{{ venstre + loop.index0 * (W - venstre) / n }}" y="{{ h - 7 }}" text-anchor="middle">{{ lab }}</text>{% endif %}{% endfor %}
+  {% else %}<text x="{{ W / 2 }}" y="{{ h / 2 }}" text-anchor="middle">Ingen data endnu</text>{% endif %}
+</svg>
+{% endmacro %}
+
+{% macro gruppe(nr, label) %}<span class="badge g{{ nr }}">{{ label }}</span>{% endmacro %}
+
+{% macro status(tilstand, id=None) %}<span class="badge {{ tilstand }}" {% if id %}data-status="{{ id }}"{% endif %}>{{ tilstand }}</span>{% endmacro %}
+
+{% macro lqi(v) %}{% if v is none %}<span class="muted">–</span>{% else %}<span class="lqi {{ 'svag' if v < 40 else 'mid' if v < 80 }}"><i style="width:{{ [v / 255 * 100, 100] | min }}%"></i></span>{{ v }}{% endif %}{% endmacro %}

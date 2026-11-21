@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titel %}Konto{% endblock %}
+{% block indhold %}
+<h1>Konto</h1>
+<div class="gitter2">
+  <div class="kort">
+    <h2>Skift email</h2>
+    <p class="muted">Nuværende: {{ bruger.email }}. Emailen er også dit brugernavn.</p>
+    <form method="post">
+      <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="email">
+      <div class="felt"><label>Ny email</label><input type="email" name="email" required></div>
+      <div class="felt"><label>Din nuværende adgangskode</label><input type="password" name="nuvaerende" autocomplete="current-password" required></div>
+      <button>Skift email</button>
+    </form>
+  </div>
+  <div class="kort">
+    <h2>Skift adgangskode</h2>
+    <form method="post">
+      <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="kode">
+      <div class="felt"><label>Nuværende adgangskode</label><input type="password" name="nuvaerende" autocomplete="current-password" required></div>
+      <div class="felt"><label>Ny adgangskode (mindst 8 tegn)</label><input type="password" name="kode" autocomplete="new-password" minlength="8" required></div>
+      <div class="felt"><label>Gentag ny adgangskode</label><input type="password" name="kode2" autocomplete="new-password" minlength="8" required></div>
+      <button>Skift adgangskode</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

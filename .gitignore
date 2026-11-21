@@ -1,0 +1,37 @@
+# Hemmeligheder – kun .env.example skal med
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Data, testdata, databaser og backups
+data/
+testdata/
+backup/
+backups/
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.zip
+*.tar.gz
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Editor/OS
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Claude Code lokale indstillinger
+.claude/settings.local.json

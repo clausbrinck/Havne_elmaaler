@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}Netværk og status{% endblock %}
+{% block indhold %}
+<h1>Netværk og status</h1>
+
+<div class="gitter">
+  <div class="tal {{ 'ok' if ha.ok else 'fejl' }}"><div class="v">{{ 'OK' if ha.ok else 'FEJL' }}</div>
+    <div class="l">{{ 'Simulator' if ha.kilde == 'sim' else 'Home Assistant' }} · sidst ok {{ ha.sidst_ok | siden }}</div></div>
+  <div class="tal {{ 'ok' if ha.bridge in ('on', 'true', 'online') else 'adv' }}"><div class="v">{{ ha.bridge or '?' }}</div><div class="l">Zigbee2MQTT bridge</div></div>
+  <div class="tal"><div class="v">{{ ha.fundne_maalere }}</div><div class="l">Målere fundet i Home Assistant</div></div>
+  <div class="tal"><div class="v">{{ lqi.snit | dk(0) if lqi.snit is not none else '–' }}</div><div class="l">Gns. linkquality (min {{ lqi.min if lqi.min is not none else '–' }})</div></div>
+  <div class="tal {{ 'adv' if lqi.svage else '' }}"><div class="v">{{ lqi.svage }}</div><div class="l">Målere med svagt signal (&lt; 40)</div></div>
+</div>
+{% if ha.fejl %}<div class="flash fejl">Seneste fejl: {{ ha.fejl }}</div>{% endif %}
+
+<div class="gitter2">
+<div class="kort">
+  <h2>Zigbee-målere</h2>
+  <p class="muted">Sorteret med offline og svagest signal øverst. Entiteter: <code>{{ config.HA_ENERGY_ENTITY }}</code>, <code>{{ config.HA_POWER_ENTITY }}</code></p>
+  <div class="tabel-wrap" style="max-height:620px;overflow-y:auto"><table>
+    <thead><tr><th>Måler</th><th>Placering</th><th>Status</th><th>Signal</th><th>Sidst set</th></tr></thead>
+    <tbody>
+    {% for m in maalere if m.aktiv %}
+      <tr><td><a href="{{ url_for('kontor_maaler', nr=m.id) }}">{{ '%03d' % m.id }}</a></td><td>{{ m.placering }}</td>
+        <td>{{ gr.status('online' if m.tilgaengelig else ('offline' if m.sidst_set else 'ukendt')) }}</td>
+        <td>{{ gr.lqi(m.linkquality) }}</td>
+        <td>{{ m.sidst_set | siden }}{% if m.offline_siden %}<br><span class="muted">offline siden {{ m.offline_siden | tid }}</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+
+<div>
+<div class="kort">
+  <h2>Brugere og logins</h2>
+  <div class="gitter">
+    <div class="tal"><div class="v">{{ login.aktive }}</div><div class="l">Aktive brugere ({{ login.kontor }} kontor)</div></div>
+    <div class="tal"><div class="v">{{ login['30_dage'] }}</div><div class="l">Logget ind sidste 30 dage</div></div>
+    <div class="tal {{ 'adv' if login.uden_kode }}"><div class="v">{{ login.uden_kode }}</div><div class="l">Har ikke valgt kode</div></div>
+  </div>
+  <h3>Seneste logins</h3>
+  <table><tbody>
+    {% for b in brugere if b.sidste_login %}<tr><td><a href="{{ url_for('kontor_bruger', bid=b.id) }}">{{ b.navn or b.email }}</a></td><td class="n">{{ b.sidste_login | tid }}</td></tr>{% endfor %}
+  </tbody></table>
+  {% if login.aldrig %}
+  <details style="margin-top:10px"><summary>{{ login.aldrig | length }} har aldrig logget ind</summary>
+    <ul>{% for b in login.aldrig %}<li><a href="{{ url_for('kontor_bruger', bid=b.id) }}">{{ b.navn or b.email }}</a> <span class="muted">{{ b.email }}</span></li>{% endfor %}</ul>
+  </details>{% endif %}
+</div>
+
+<div class="kort">
+  <h2>Hændelseslog</h2>
+  <div style="max-height:400px;overflow-y:auto"><table>
+    <tbody>{% for h in haend %}<tr><td class="muted" style="white-space:nowrap">{{ h.ts | tid }}</td><td><span class="badge {{ 'offline' if h.type == 'fejl' else 'ukendt' }}">{{ h.type }}</span></td><td>{{ h.tekst }}</td></tr>
+    {% else %}<tr><td class="muted">Ingen hændelser.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+</div>
+</div>
+{% endblock %}

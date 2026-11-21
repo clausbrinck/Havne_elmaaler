@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titel %}Glemt adgangskode{% endblock %}
+{% block indhold %}
+<div class="login-boks kort">
+  <h1>Glemt adgangskode</h1>
+  <p class="muted">Skriv din email, så sender vi et link, hvor du kan vælge en ny adgangskode.</p>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <div class="felt"><label for="email">Email</label><input type="email" id="email" name="email" required autofocus></div>
+    <button style="width:100%">Send link</button>
+  </form>
+  <p class="muted" style="margin-top:14px"><a href="{{ url_for('login') }}">Tilbage til log ind</a></p>
+</div>
+{% endblock %}
