@@ -57,6 +57,7 @@ BACKUP_DIR = _env("BACKUP_DIR", os.path.join(DATA_DIR, "backup"))
 BACKUP_EXTRA_DIR = _env("BACKUP_EXTRA_DIR", "")      # fx /backup-usb eller NAS-mount
 BACKUP_KEEP_DAYS = int(_env("BACKUP_KEEP_DAYS", "30"))
 BACKUP_TIME = _env("BACKUP_TIME", "03:00")
+BACKUP_RCLONE_REMOTE = _env("BACKUP_RCLONE_REMOTE", "")   # fx "krypt:" = krypteret OneDrive-mappe (rclone)
 
 # Cookies: sæt til true når siden kører bag HTTPS
 COOKIE_SECURE = _bool("COOKIE_SECURE", False)

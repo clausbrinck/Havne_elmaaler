@@ -4,6 +4,7 @@ import io
 import os
 import re
 import secrets
+import threading
 from datetime import timedelta
 from functools import wraps
 
@@ -886,7 +887,11 @@ def system_database():
         try:
             if h == "backup":
                 f = backup.lav_backup(f"manuel af {g.bruger['email']}")
-                flash(f"Backup lavet: {os.path.basename(f)}", "ok")
+                flash(f"Backup lavet: {os.path.basename(f)}" +
+                      (" – kopieres nu til skyen i baggrunden." if config.BACKUP_RCLONE_REMOTE else ""), "ok")
+            elif h == "sky":
+                threading.Thread(target=backup.kopier_til_sky, daemon=True).start()
+                flash("Kopiering til skyen er startet. Genindlæs siden om lidt for at se resultatet.", "ok")
             elif h == "integritet":
                 r = vedligehold.integritet()
                 flash("Integritetstjek: databasen er i orden." if r == ["ok"] else
@@ -917,7 +922,7 @@ def system_database():
         if resultat is None:
             return redirect(url_for("system_database"))
     return render_template("system_database.html", info=vedligehold.info(), backups=backup.liste(), config=config,
-                           resultat=resultat, i_dag=i_dag().isoformat())
+                           resultat=resultat, i_dag=i_dag().isoformat(), sky=backup.sky_status())
 
 
 def _aflaesninger(nr, fra, til):

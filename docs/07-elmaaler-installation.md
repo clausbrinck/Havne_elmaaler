@@ -102,8 +102,10 @@ kommer forbruget med i næste aflæsning. Kontoret får mail, hvis Home Assistan
 
 ## Backup og gendannelse
 
-Backups ligger i `data/backup/` som `elmaaler-ÅÅÅÅMMDD-TTMMSS.db.gz` og gemmes 30 dage.
-**Læg også en kopi uden for serveren** – fx USB-disk eller NAS:
+Backups ligger i `data/backup/` som `elmaaler-ÅÅÅÅMMDD-TTMMSS.db.gz`. Daglige backups gemmes 30 dage
+(`BACKUP_KEEP_DAYS`), og backuppen fra den 1. i hver måned gemmes 13 måneder, så en afregning kan
+genskabes efter standerhejsning. **Læg også en kopi uden for serveren** – helst krypteret i OneDrive (nedenfor)
+eller på USB-disk/NAS:
 
 1. Mount disken, fx på `/mnt/usb-backup`.
 2. I `docker-compose.yml`: fjern `#` foran linjen `- /mnt/usb-backup:/backup-usb`.
@@ -111,7 +113,102 @@ Backups ligger i `data/backup/` som `elmaaler-ÅÅÅÅMMDD-TTMMSS.db.gz` og gemm
 
 Backups kan også laves og hentes under **System → Database & backup** i webinterfacet.
 
-Gendannelse:
+### Backup i OneDrive (krypteret)
+
+Hver nat efter backuppen kopieres den med programmet **rclone** til en mappe i OneDrive. Filerne
+krypteres *før* de forlader serveren, så Microsoft (eller andre med adgang til OneDrive-kontoen) kun ser
+uforståelige filnavne og data. Kopierne i OneDrive slettes aldrig af en tom eller hacket server – kun
+backups ældre end 30 dage (daglige) / 13 måneder (den 1. i måneden) ryddes op.
+
+Brug en OneDrive-konto, der tilhører **klubben** (ikke en privat konto), så den overlever bestyrelsesskift.
+
+**1. Opdatér serveren**, så rclone er i Docker-imaget:
+
+```bash
+cd /opt/stacks/elmaaler && docker compose up -d --build
+```
+
+**2. Installér rclone på din egen pc** (bruges kun til at logge ind i OneDrive med browseren). I PowerShell:
+
+```powershell
+winget install Rclone.Rclone
+```
+
+Luk og åbn PowerShell igen bagefter.
+
+**3. Opret forbindelsen til OneDrive** – på serveren:
+
+```bash
+docker exec -it elmaaler rclone config
+```
+
+Svar sådan (tryk Enter = standardsvar):
+
+| Spørgsmål | Svar |
+|---|---|
+| `n/s/q>` | `n` (ny) |
+| `name>` | `onedrive` |
+| `Storage>` | skriv `onedrive` |
+| `client_id>` og `client_secret>` | Enter (tomt) |
+| `region>` | `1` (Microsoft Cloud Global) |
+| `Edit advanced config?` | `n` |
+| `Use web browser to automatically authenticate?` | `n` |
+| `config_token>` | se nedenfor |
+
+rclone viser nu en kommando, fx `rclone authorize "onedrive"`. Kør den **i PowerShell på din pc**. Browseren
+åbner – log ind med klubbens Microsoft-konto og godkend. PowerShell viser derefter en lang tekst
+mellem `--->` og `<---End paste`. Kopiér hele teksten (det der står mellem pilene) og sæt den ind ved `config_token>` på serveren.
+
+| Spørgsmål | Svar |
+|---|---|
+| `config_type>` | `1` (OneDrive Personal or Business) |
+| `config_driveid>` | `1` (den første/eneste) |
+| `Is that okay?` / `Keep this "onedrive" remote?` | `y` |
+
+**4. Opret den krypterede mappe** – stadig i `rclone config`:
+
+| Spørgsmål | Svar |
+|---|---|
+| `e/n/d/r/c/s/q>` | `n` (ny) |
+| `name>` | `krypt` |
+| `Storage>` | skriv `crypt` |
+| `remote>` | `onedrive:Elmaaler-backup` |
+| `filename_encryption>` | `1` (standard) |
+| `directory_name_encryption>` | `1` (true) |
+| `y/g>` (adgangskode) | `g` (lav en stærk), vælg `128` bits, og `y` for at bruge den |
+| `y/g/n>` (salt / password2) | `g`, `128`, `y` |
+| `Edit advanced config?` | `n` |
+| `Keep this "krypt" remote?` | `y` |
+| `e/n/d/r/c/s/q>` | `q` (afslut) |
+
+> ⚠ **Skriv de to adgangskoder ned, som rclone viser i trin 4**, og gem dem i klubbens
+> password manager eller i et kuvert i pengeskabet. **Uden dem kan backupperne i OneDrive ikke læses** –
+> heller ikke af os. Går serveren tabt, skal de bruges til at gendanne.
+
+**5. Slå kopieringen til**: i Dockge (`.env`-feltet) eller `.env`:
+
+```
+BACKUP_RCLONE_REMOTE=krypt:
+```
+
+Gem og genstart stacken (`docker compose up -d`).
+
+**6. Afprøv**: Log ind som systemadministrator → **System → Database & backup** → *Kopiér til skyen nu*.
+Genindlæs siden efter et minut – der skal stå "sidst kopieret …" i en grå boks. I OneDrive ligger nu
+mappen `Elmaaler-backup` med uforståelige filnavne. Det er korrekt (de er krypterede).
+
+Fejler kopieringen, skrives det i System → Log, og havnekontoret får en mail. Siden viser en rød boks.
+
+**Gendan fra OneDrive** (fx på en ny server eller din pc med rclone og de samme to adgangskoder sat op som i trin 3–4):
+
+```bash
+rclone ls krypt:                                  # vis backupperne
+rclone copy krypt:elmaaler-20261201-030000.db.gz .  # hent én
+```
+
+Pak den ud og læg den på plads som beskrevet under *Gendannelse* nedenfor.
+
+### Gendannelse
 
 ```bash
 cd ~/havne-elmaaler

@@ -27,10 +27,22 @@
 
 <div class="kort">
   <h2>Backup</h2>
-  <p class="muted">Automatisk hver nat kl. {{ config.BACKUP_TIME }}, gemmes {{ config.BACKUP_KEEP_DAYS }} dage i <code>{{ config.BACKUP_DIR }}</code>{% if config.BACKUP_EXTRA_DIR %} og kopieres til <code>{{ config.BACKUP_EXTRA_DIR }}</code>{% endif %}.</p>
-  <form method="post"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="sek" name="handling" value="backup">Lav backup nu</button></form>
+  <p class="muted">Automatisk hver nat kl. {{ config.BACKUP_TIME }}. Daglige backups gemmes {{ config.BACKUP_KEEP_DAYS }} dage, og backuppen fra den 1. i hver måned
+    gemmes 13 måneder (★). Placering: <code>{{ config.BACKUP_DIR }}</code>{% if config.BACKUP_EXTRA_DIR %} og kopi i <code>{{ config.BACKUP_EXTRA_DIR }}</code>{% endif %}.</p>
+  {% if sky %}
+  <div class="besked {{ 'alarm' if sky.fejl else 'info' }}" style="margin-bottom:10px">
+    <strong>Kopi uden for serveren ({{ sky.maal }}):</strong>
+    {% if sky.koerer %}kopierer nu…{% else %}sidst kopieret {{ sky.sidst_ok_tekst }}.{% endif %}
+    {% if sky.fejl %}<br>Seneste forsøg fejlede: {{ sky.fejl }}{% endif %}
+  </div>
+  {% else %}
+  <div class="besked alarm" style="margin-bottom:10px"><strong>Ingen kopi uden for serveren.</strong> Dør serverens disk, er både databasen og
+    alle backups væk. Sæt <code>BACKUP_RCLONE_REMOTE</code> op (krypteret OneDrive) – se installationsvejledningen.</div>
+  {% endif %}
+  <form method="post" class="linje"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="sek" name="handling" value="backup">Lav backup nu</button>
+    {% if sky %}<button class="sek" name="handling" value="sky">Kopiér til skyen nu</button>{% endif %}</form>
   <div style="max-height:300px;overflow-y:auto;margin-top:10px"><table><tbody>
-    {% for b in backups %}<tr><td><a href="{{ url_for('system_backup_hent', navn=b.navn) }}">{{ b.navn }}</a></td><td class="n">{{ b.kb }} kB</td></tr>
+    {% for b in backups %}<tr><td><a href="{{ url_for('system_backup_hent', navn=b.navn) }}">{{ b.navn }}</a>{% if b.maaned %} ★{% endif %}</td><td class="n">{{ b.kb }} kB</td></tr>
     {% else %}<tr><td class="muted">Ingen backups endnu.</td></tr>{% endfor %}
   </tbody></table></div>
   <p class="muted">Gendannelse: stop stacken, pak backup-filen ud (<code>gunzip</code>) og læg den som

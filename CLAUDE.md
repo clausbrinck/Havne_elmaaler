@@ -33,7 +33,8 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 | `web.py` | alle routes: Min side (bruger), `/kontor/...` (havnekontor), `/system/...` (admin) |
 | `simulering.py`, `vedligehold.py` | debug-simuleret forbrug; DB-info, VACUUM, integritetstjek, nulstil fejlmålt forbrug |
 | `bestyrelse.py` | PDF-månedsrapport til bestyrelsen (reportlab): `data(m)` + `pdf(d)`; sendes den 1. for nov–mar til indstillingen `bestyrelse_emails`; eksempler i `docs/eksempler/` |
-| `mailer.py`, `backup.py`, `sikkerhed.py`, `tid.py` | SMTP, backup, kodeord/tokens/login-spærring, tidshjælpere |
+| `backup.py` | natlig backup (SQLite backup-API + gzip); daglige gemmes `BACKUP_KEEP_DAYS`, den 1. i måneden 13 mdr.; krypteret kopi til OneDrive med rclone (`BACKUP_RCLONE_REMOTE=krypt:`, config i `/data/rclone/rclone.conf`) – altid `rclone copy`, aldrig `sync` |
+| `mailer.py`, `sikkerhed.py`, `tid.py` | SMTP, kodeord/tokens/login-spærring, tidshjælpere |
 
 ## Vigtige designvalg
 

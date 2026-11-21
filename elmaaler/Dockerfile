@@ -1,7 +1,10 @@
 FROM python:3.12-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 DATA_DIR=/data
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 DATA_DIR=/data RCLONE_CONFIG=/data/rclone/rclone.conf
 WORKDIR /srv
+# rclone: krypteret kopi af backup til OneDrive. Opsætningen gemmes i /data/rclone/rclone.conf
+RUN apt-get update && apt-get install -y --no-install-recommends rclone ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
  && useradd -u 1000 -m elmaaler && mkdir -p /data && chown elmaaler /data
