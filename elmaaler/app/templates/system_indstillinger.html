@@ -20,6 +20,11 @@
     </div>
     <p class="muted">Havnekontorets egne brugere vælger selv deres mails under <a href="{{ url_for('min_konto') }}">Konto</a>.</p>
 
+    <h3>Månedsrapport (PDF) til bestyrelsen</h3>
+    <div class="felt"><input type="text" name="bestyrelse_emails" value="{{ ind.bestyrelse_emails }}" placeholder="bestyrelse@…"></div>
+    <p class="muted">Sendes den 1. i måneden for november–marts, efter at måneden er låst. Flere adresser adskilles med komma.
+      Tom = ingen rapport. Kan også hentes eller sendes manuelt under Opgørelse.</p>
+
     <h3>Tidspunkter og grænser (gælder alle)</h3>
     <div class="felter">
       <div class="felt"><label>Opgørelser sendes kl.</label>

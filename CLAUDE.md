@@ -13,7 +13,7 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 ```
 
 - Én Python-proces: Flask-app serveret af waitress + én baggrundstråd (`jobs.koer`).
-- Afhængigheder bevidst minimale: flask, waitress, requests, tzdata. Ingen JS-biblioteker,
+- Afhængigheder bevidst minimale: flask, waitress, requests, tzdata, reportlab (kun PDF-rapporten). Ingen JS-biblioteker,
   ingen CDN (kører på lokalt net). Grafer: `gr.panel(...)` i `templates/_graf.html` tegnes som SVG af
   `static/app.js` ud fra `/api/forbrug` – Døgn/Uge/Måned/Vinter, bladr med ‹ › eller swipe, tryk på søjle = tooltip.
   Døgn er altid kl. 00–24. Medlemmer (eller `egen=1`) ser kun forbrug fra egne tildelingsperioder.
@@ -32,6 +32,7 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 | `rapport.py` | CSV-udtræk og mailtekster |
 | `web.py` | alle routes: Min side (bruger), `/kontor/...` (havnekontor), `/system/...` (admin) |
 | `simulering.py`, `vedligehold.py` | debug-simuleret forbrug; DB-info, VACUUM, integritetstjek, nulstil fejlmålt forbrug |
+| `bestyrelse.py` | PDF-månedsrapport til bestyrelsen (reportlab): `data(m)` + `pdf(d)`; sendes den 1. for nov–mar til indstillingen `bestyrelse_emails`; eksempler i `docs/eksempler/` |
 | `mailer.py`, `backup.py`, `sikkerhed.py`, `tid.py` | SMTP, backup, kodeord/tokens/login-spærring, tidshjælpere |
 
 ## Vigtige designvalg
@@ -83,6 +84,7 @@ DATA_DIR=./testdata SOURCE=sim SIM_BACKFILL_DAYS=45 ADMIN_EMAIL=a@b.dk ADMIN_PAS
 ## Drift
 
 - `docker-compose.yml` + `.env.example` (almindelig Docker) – se `docs/07-elmaaler-installation.md`.
+- Koden ligger i Docker-imaget: efter `git pull` skal imaget altid bygges om (`docker compose up -d --build`).
 - `dockge/compose.yaml` + `dockge/.env.example` (indholdet sættes i Dockges .env-felt) – Dockge-stack: læg i `/opt/stacks/elmaaler/` med koden i
   `/opt/stacks/elmaaler/elmaaler/`. Data i navngivet volume `elmaaler-data`.
 - GitHub: `clausbrinck/Havne_elmaaler` (var tomt ved overførslen – første push mangler).

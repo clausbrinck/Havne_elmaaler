@@ -143,6 +143,7 @@ STANDARD_INDSTILLINGER = {
     "ekstra_mail_dag": False,
     "ekstra_mail_uge": False,
     "ekstra_mail_maaned": True,
+    "bestyrelse_emails": "bestyrelse@aabenraa-sejlclub.dk",   # PDF-månedsrapport (kun afregningsmåneder)
 }
 
 

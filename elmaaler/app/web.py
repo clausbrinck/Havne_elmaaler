@@ -10,9 +10,9 @@ from functools import wraps
 from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
                    send_from_directory, session, url_for)
 
-from . import (backup, collector, config, db, forbrug, mailer, perioder, rapport, sikkerhed, simulering,
-               vedligehold)
-from .tid import (nu, i_dag, maaned_str, maaned_grænser, maaned_navn, naeste_maaned,
+from . import (backup, bestyrelse, collector, config, db, forbrug, jobs, mailer, perioder, rapport, sikkerhed,
+               simulering, vedligehold)
+from .tid import (nu, i_dag, maaned_str, maaned_grænser, maaned_navn, naeste_maaned, forrige_maaned,
                   parse_dato, dato_ts, fmt_tid, fmt_dato, siden, lokal)
 
 app = Flask(__name__)
@@ -731,11 +731,39 @@ def kontor_opgoerelse():
             forbrug.laas_maaned(maaned)
             flash(f"Opgørelsen for {maaned_navn(maaned)} er (gen)beregnet og låst.", "ok")
         return redirect(url_for("kontor_opgoerelse", maaned=maaned))
+    if request.method == "POST" and request.form.get("handling") == "send_bestyrelse":
+        if not er_admin(g.bruger):
+            abort(403)
+        if not bestyrelse.modtagere():
+            flash("Der er ingen bestyrelses-adresse sat op under System › Indstillinger.", "fejl")
+        elif jobs.send_bestyrelsesrapport(maaned):
+            flash(f"Månedsrapporten for {maaned_navn(maaned)} er sendt til {', '.join(bestyrelse.modtagere())}.", "ok")
+        else:
+            flash("Rapporten kunne ikke sendes – se System › Log.", "fejl")
+        return redirect(url_for("kontor_opgoerelse", maaned=maaned))
     rows, laast = forbrug.maanedsopgoerelse(maaned)
     return render_template("kontor_opgoerelse.html", rows=rows, laast=laast, maaned=maaned,
                            fordeling=forbrug.gruppe_fordeling(rows), maaneder=_maaned_liste(),
                            afregnes=forbrug.afregnes(maaned), indevaerende=maaned == maaned_str(i_dag()),
-                           laast_ts=forbrug.er_laast(maaned))
+                           laast_ts=forbrug.er_laast(maaned), bestyrelse_emails=", ".join(bestyrelse.modtagere()))
+
+
+@app.route("/kontor/rapport.pdf")
+@kontor_kraevet
+def kontor_rapport_pdf():
+    """Månedsrapporten til bestyrelsen som PDF (vises i browseren)."""
+    maaned = request.args.get("maaned") or forrige_maaned(maaned_str(i_dag()))
+    if not re.fullmatch(r"\d{4}-\d{2}", maaned):
+        abort(400)
+    try:
+        data = bestyrelse.pdf(bestyrelse.data(maaned))
+    except Exception as e:  # noqa: BLE001
+        app.logger.exception("PDF-rapport fejlede")
+        db.log("fejl", f"PDF-rapport for {maaned} fejlede: {e}")
+        flash(f"PDF-rapporten kunne ikke laves: {e}", "fejl")
+        return redirect(url_for("kontor_opgoerelse", maaned=maaned))
+    return Response(data, mimetype="application/pdf",
+                    headers={"Content-Disposition": f"inline; filename=maanedsrapport-{maaned}.pdf"})
 
 
 @app.route("/kontor/opgoerelse.csv")
@@ -911,6 +939,12 @@ def system_indstillinger():
                     if not EMAIL_RE.match(e):
                         raise ValueError(f"Ugyldig email: {e}")
                 db.gem("ekstra_kontor_emails", ", ".join(emails))
+                best = [e.strip() for e in request.form.get("bestyrelse_emails", "").replace(";", ",").split(",")
+                        if e.strip()]
+                for e in best:
+                    if not EMAIL_RE.match(e):
+                        raise ValueError(f"Ugyldig email: {e}")
+                db.gem("bestyrelse_emails", ", ".join(best))
                 for f in ["offline", "dag", "uge", "maaned"]:
                     db.gem(f"ekstra_mail_{f}", bool(request.form.get(f"ekstra_mail_{f}")))
                 db.gem("mail_tidspunkt", f"{int(request.form['mail_time']):02d}:{int(request.form['mail_min']):02d}")

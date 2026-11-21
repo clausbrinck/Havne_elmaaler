@@ -3,7 +3,7 @@ import logging
 import time
 from datetime import timedelta
 
-from . import backup, collector, config, db, forbrug, mailer, rapport, simulering
+from . import backup, bestyrelse, collector, config, db, forbrug, mailer, rapport, simulering
 from .tid import nu, lokal, i_dag, maaned_str, forrige_maaned, maaned_navn, fmt_tid
 
 log = logging.getLogger("jobs")
@@ -220,6 +220,31 @@ def planlagte():
                 mailer.send(modt, f"Elmålere – månedsopgørelse {maaned_navn(m)}", rapport.kontor_maaned(rows, m),
                             vedhaeft=[(f"elforbrug-{m}.csv", rapport.opgoerelse_csv(m), "text/csv")],
                             signatur=False)
+
+        # PDF-rapport til bestyrelsen – kun for afregningsmåneder (nov–mar)
+        if forbrug.afregnes(m) and bestyrelse.modtagere() and _engang(f"job:bestyrelse:{m}"):
+            if simulering.aktiv():
+                db.log("mail", f"Bestyrelsesrapport for {m} ikke sendt – der er simuleret forbrug i systemet")
+            else:
+                send_bestyrelsesrapport(m)
+
+
+def send_bestyrelsesrapport(m):
+    """Lav PDF-rapporten for måned m og send den til bestyrelsens mailgruppe. Returnerer True hvis sendt."""
+    try:
+        d = bestyrelse.data(m)
+        data = bestyrelse.pdf(d)
+    except Exception as e:  # noqa: BLE001
+        log.exception("Bestyrelsesrapport fejlede")
+        db.log("fejl", f"Bestyrelsesrapport for {m} kunne ikke laves: {e}")
+        return False
+    ok = mailer.send(bestyrelse.modtagere(), f"Elmålere – månedsrapport {maaned_navn(m)}", bestyrelse.mailtekst(d),
+                     vedhaeft=[(f"maanedsrapport-{m}.pdf", data, "application/pdf"),
+                               (f"elforbrug-{m}.csv", rapport.opgoerelse_csv(m), "text/csv")],
+                     signatur=False)
+    if ok:
+        db.log("mail", f"Månedsrapport for {m} sendt til bestyrelsen ({', '.join(bestyrelse.modtagere())})")
+    return ok
 
 
 # ---------------------------------------------------------------- hovedløkke

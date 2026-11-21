@@ -19,6 +19,12 @@
     <div class="linje" style="display:flex;gap:8px;flex-wrap:wrap">
       <a class="knap" href="{{ url_for('kontor_opgoerelse_csv', maaned=maaned) }}">Hent CSV (Excel)</a>
       <a class="knap sek" href="{{ url_for('kontor_vinter_csv', aar=(maaned[:4]|int if maaned[5:]|int >= 11 else maaned[:4]|int - 1)) }}">Hele vinterperioden pr. bruger</a>
+      {% if afregnes %}<a class="knap sek" href="{{ url_for('kontor_rapport_pdf', maaned=maaned) }}" target="_blank">Månedsrapport (PDF)</a>{% endif %}
+      {% if afregnes and not indevaerende and er_admin %}
+      <form method="post" data-bekraeft="Send månedsrapporten for {{ maaned | maaned_navn }} til {{ bestyrelse_emails or 'bestyrelsen' }}?">
+        <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="maaned" value="{{ maaned }}">
+        <button class="sek" name="handling" value="send_bestyrelse" {{ 'disabled' if not bestyrelse_emails }}>Send til bestyrelsen</button></form>
+      {% endif %}
       {% if not indevaerende %}
       <form method="post" data-bekraeft="Genberegn og lås opgørelsen for {{ maaned | maaned_navn }}? Evt. tidligere låste tal overskrives.">
         <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="maaned" value="{{ maaned }}">
