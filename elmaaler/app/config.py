@@ -58,8 +58,12 @@ BACKUP_EXTRA_DIR = _env("BACKUP_EXTRA_DIR", "")      # fx /backup-usb eller NAS-
 BACKUP_KEEP_DAYS = int(_env("BACKUP_KEEP_DAYS", "30"))
 BACKUP_TIME = _env("BACKUP_TIME", "03:00")
 
-# Cookies: sæt til true når siden kører bag HTTPS
-COOKIE_SECURE = _bool("COOKIE_SECURE", False)
+# Cookies: sikre (kun HTTPS) når BASE_URL starter med https://, medmindre COOKIE_SECURE er sat
+COOKIE_SECURE = _bool("COOKIE_SECURE", BASE_URL.lower().startswith("https://"))
+
+# Antal reverse proxies foran programmet (Cloudflare Tunnel, Caddy, Nginx ...), hvis
+# X-Forwarded-For/-Proto/-Host-headere må stoles på. 0 = ingen proxy (headerne ignoreres).
+PROXY_HOPS = int(_env("PROXY_HOPS", "1"))
 
 # Simulator
 SIM_BACKFILL_DAYS = int(_env("SIM_BACKFILL_DAYS", "0"))

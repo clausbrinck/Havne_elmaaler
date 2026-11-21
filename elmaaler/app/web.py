@@ -7,14 +7,21 @@ import secrets
 from datetime import timedelta
 from functools import wraps
 
+from urllib.parse import urlsplit
+
 from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
                    send_from_directory, session, url_for)
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from . import backup, collector, config, db, forbrug, mailer, rapport, sikkerhed
 from .tid import (nu, i_dag, maaned_str, maaned_grænser, maaned_navn, naeste_maaned,
                   parse_dato, dato_ts, fmt_tid, fmt_dato, siden, lokal)
 
 app = Flask(__name__)
+if config.PROXY_HOPS > 0:
+    # Bag Cloudflare Tunnel/Caddy/Nginx: brug klientens rigtige IP, https og værtsnavn fra proxyen
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=config.PROXY_HOPS, x_proto=config.PROXY_HOPS,
+                            x_host=config.PROXY_HOPS)
 app.secret_key = config.secret_key()
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
@@ -32,10 +39,33 @@ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 app.jinja_env.filters.update(dk=rapport.dk, tid=fmt_tid, dato=fmt_dato, siden=siden, maaned_navn=maaned_navn)
 
 
+LOKALE_VAERTER = ("localhost", "127.0.0.1", "0.0.0.0", "::1")
+
+
+def base_url_er_lokal():
+    """True hvis BASE_URL peger på denne maskine (localhost) – så virker links i mails ikke for andre."""
+    return (urlsplit(config.BASE_URL).hostname or "") in LOKALE_VAERTER
+
+
+def base_url_advarsel():
+    """Tekst til havnekontoret hvis BASE_URL ikke passer med den adresse, siden bliver brugt på."""
+    if not g.get("bruger") or g.bruger["rolle"] != "kontor":
+        return None
+    base = urlsplit(config.BASE_URL)
+    her = request.host.split(":")[0].lower()
+    if base_url_er_lokal() and her not in LOKALE_VAERTER:
+        return (f"BASE_URL er sat til {config.BASE_URL}, så links i mails (invitation, nulstil kode) "
+                f"virker ikke for brugerne. Sæt BASE_URL={request.scheme}://{request.host} i .env og genstart.")
+    if base.scheme == "http" and request.scheme == "https" and (base.hostname or "") == her:
+        return (f"Siden bruges via HTTPS, men BASE_URL er {config.BASE_URL}. "
+                f"Sæt BASE_URL=https://{request.host} i .env og genstart.")
+    return None
+
+
 @app.context_processor
 def faelles():
     return {"klub": config.KLUB_NAVN, "bruger": g.get("bruger"), "csrf": csrf_token,
-            "maaned_navn": maaned_navn, "nu": nu()}
+            "maaned_navn": maaned_navn, "nu": nu(), "base_url_advarsel": base_url_advarsel}
 
 
 def csrf_token():
@@ -129,7 +159,7 @@ def login():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         kode = request.form.get("kode", "")
-        ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+        ip = request.remote_addr or ""   # rigtig klient-IP via ProxyFix (kan ikke forfalskes af klienten)
         if sikkerhed.login_begraenser.blokeret(ip) or sikkerhed.login_begraenser.blokeret(email):
             flash("For mange forkerte forsøg. Vent 15 minutter og prøv igen.", "fejl")
             return render_template("login.html"), 429
