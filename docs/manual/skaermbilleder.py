@@ -16,6 +16,8 @@ MAPPE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "billeder")
 KODE = "testtest1"
 BRUGERE = {"hans": "hans@eksempel.dk", "kontor": "kontor@aabenraa-sejlclub.dk", "admin": "admin@aabenraa-sejlclub.dk"}
 MOBIL, PC = (390, 844, True), (1280, 860, False)
+# testsystemets lokale mappe vises som serverens rigtige sti
+STI = "document.querySelectorAll('code').forEach(function(c){ if (c.textContent.indexOf('manualdata') >= 0) c.textContent = '/data/backup'; });"
 # vælg fanen Havørnen (siden husker ellers den sidst valgte båd)
 HAVOERN = ("var f=__find('.baad-faner button','Havørnen'); if (f) f.click();"
            "await new Promise(r=>setTimeout(r,700)); window.scrollTo(0,0);")
@@ -140,8 +142,13 @@ BILLEDER = [
     ("system-log", "admin", "/system/log", PC, "", None, [["select[name=type]", "", 1], ["input[name=q]", "", 2]]),
     ("system-maalere", "admin", "/system/maalere", PC, "", None,
      [["input[data-filter]", "", 1], ["button", "Gem ændringer", 2, "h"]]),
-    ("system-database", "admin", "/system/database", PC, "", [[".kort", "Backup"]],
+    ("system-database", "admin", "/system/database", PC, STI, [[".kort h2", "Backup"], [".kort p.muted", "Gendannelse"]],
      [[".kort .besked", "", 1], ["button", "Lav backup nu", 2], ["table a", "", 3]]),
+    # kræver testsystemet startet med BACKUP_RCLONE_REMOTE=krypt: og en "Backup kopieret til"-linje i loggen
+    ("system-database-sky", "admin", "/system/database", PC, STI, [[".kort h2", "Backup"], [".kort .besked", ""], ["button", "Kopiér til skyen nu"]],
+     [[".kort .besked", "", 1], ["button", "Kopiér til skyen nu", 2, "h"]]),
+    ("system-database-roed", "admin", "/system/database", PC, STI, [[".kort h2", "Backup"], [".kort .besked", ""]],
+     [[".kort .besked", "", 1]]),
     ("system-database-nulstil", "admin", "/system/database", PC, "", [[".kort", "Nulstil fejlmålt forbrug"]], []),
     ("system-indstillinger", "admin", "/system/indstillinger", PC, "", [[".kort", "Mails – fælles opsætning"]],
      [["input[name=ekstra_kontor_emails]", "", 1], ["input[name=bestyrelse_emails]", "", 2],

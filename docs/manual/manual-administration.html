@@ -20,7 +20,9 @@
       <ol><li>Status og Zigbee-målere</li><li>Systemloggen</li><li>Måleropsætning</li><li>Database og backup</li><li>Nulstil fejlmålt forbrug</li><li>Indstillinger</li><li>Debug (test)</li></ol></li>
     <li>3 · Månedsrapporten til bestyrelsen
       <ol></ol></li>
-    <li>4 · Drift og vedligehold
+    <li>4 · Backup i OneDrive
+      <ol><li>Det skal du bruge</li><li>Trin 1–6: opsætning</li><li>Daglig kontrol</li><li>Gendan fra OneDrive</li></ol></li>
+    <li>5 · Drift og vedligehold
       <ol><li>Opdatering af systemet</li><li>Backup – det vigtigste</li><li>Automatiske job</li><li>Manualerne på websiden</li><li>Teknisk dokumentation</li></ol></li>
   </ol>
 </div>
@@ -83,7 +85,7 @@
     <li><b>Hent en backup</b> ved at klikke på den. ★ = månedsbackup (den 1.), som gemmes i 13 måneder. De daglige gemmes i 30 dage.</li>
   </ol>
 </div>
-<div class="vigtigt"><b>Krypteringskoderne til OneDrive</b>Backupperne i OneDrive er krypterede. Uden de to koder, der blev lavet ved opsætningen, kan de ikke læses. Koderne skal ligge i klubbens password manager eller i pengeskabet. Opsætning: se <i>docs/07-elmaaler-installation.md</i>, afsnittet "Backup i OneDrive".</div>
+<div class="vigtigt"><b>Krypteringskoderne til OneDrive</b>Backupperne i OneDrive er krypterede. Uden de to koder, der blev lavet ved opsætningen, kan de ikke læses. Koderne skal ligge i klubbens password manager eller i pengeskabet. Opsætning og gendannelse: se kapitel 4.</div>
 
 <h2>Nulstil fejlmålt forbrug</h2>
 <div class="billede bred">
@@ -139,7 +141,125 @@
 </ul>
 <p>Rapporten kan også hentes når som helst under <b>Opgørelse → Månedsrapport (PDF)</b> af havnekontoret.</p>
 
-<h1><span class="nr">4</span><div>Drift og vedligehold</div></h1>
+<h1><span class="nr">4</span><div>Backup i OneDrive<small>Opsætning, kontrol og gendannelse</small></div></h1>
+
+<p>Hver nat efter backuppen kopieres den med programmet <b>rclone</b> til en mappe i klubbens OneDrive. Filerne <b>krypteres
+  før de forlader serveren</b>, så Microsoft – eller andre med adgang til OneDrive-kontoen – kun ser uforståelige filnavne og data.
+  Databasen indeholder medlemmernes navne, e-mails og telefonnumre, så krypteringen er også et GDPR-krav.</p>
+<p>Kopierne i OneDrive bliver <b>aldrig slettet af en tom eller hacket server</b>. Der ryddes kun op efter faste regler:
+  daglige kopier efter 30 dage, kopien fra den 1. i måneden efter 13 måneder.</p>
+<div class="tip"><b>Brug klubbens konto</b>Brug en OneDrive-konto, der tilhører klubben – ikke en privat – så backupperne ikke forsvinder ved bestyrelsesskift.</div>
+
+<h2>Det skal du bruge</h2>
+<ul>
+  <li>Adgang til serveren med SSH (eller Dockges terminal).</li>
+  <li>Din egen pc med en browser – til at logge ind i OneDrive.</li>
+  <li>Klubbens Microsoft-konto (e-mail og adgangskode).</li>
+  <li>Ca. 20 minutter.</li>
+</ul>
+
+<h2>Trin 1 – Opdatér serveren</h2>
+<p>rclone skal være med i programmets Docker-image. Kør på serveren:</p>
+<p><code>cd /opt/stacks/elmaaler &amp;&amp; docker compose up -d --build</code></p>
+
+<h2>Trin 2 – Installér rclone på din pc</h2>
+<p>rclone bruges kun på pc'en til at logge ind i OneDrive med browseren. Åbn <b>PowerShell</b> og kør:</p>
+<p><code>winget install Rclone.Rclone</code></p>
+<p>Luk PowerShell og åbn den igen bagefter.</p>
+
+<h2>Trin 3 – Opret forbindelsen til OneDrive</h2>
+<p>Kør på serveren: <code>docker exec -it elmaaler rclone config</code> og svar sådan (Enter = standardsvaret):</p>
+<table>
+  <thead><tr><th style="width:52%">rclone spørger</th><th>Du svarer</th></tr></thead>
+  <tbody>
+    <tr><td><code>n/s/q&gt;</code></td><td><code>n</code> (ny forbindelse)</td></tr>
+    <tr><td><code>name&gt;</code></td><td><code>onedrive</code></td></tr>
+    <tr><td><code>Storage&gt;</code></td><td>skriv <code>onedrive</code></td></tr>
+    <tr><td><code>client_id&gt;</code> og <code>client_secret&gt;</code></td><td>Enter (tomt)</td></tr>
+    <tr><td><code>region&gt;</code></td><td><code>1</code> (Microsoft Cloud Global)</td></tr>
+    <tr><td><code>Edit advanced config?</code></td><td><code>n</code></td></tr>
+    <tr><td><code>Use web browser to automatically authenticate?</code></td><td><code>n</code></td></tr>
+    <tr><td><code>config_token&gt;</code></td><td>se nedenfor</td></tr>
+  </tbody>
+</table>
+<ol class="trin">
+  <li>rclone viser en kommando, fx <code>rclone authorize "onedrive"</code>. Kør den i <b>PowerShell på din pc</b>.</li>
+  <li>Browseren åbner. Log ind med klubbens Microsoft-konto og godkend.</li>
+  <li>PowerShell viser en lang tekst mellem <code>---&gt;</code> og <code>&lt;---End paste</code>. Kopiér teksten mellem pilene.</li>
+  <li>Sæt den ind ved <code>config_token&gt;</code> på serveren og tryk Enter.</li>
+</ol>
+<table>
+  <thead><tr><th style="width:52%">rclone spørger</th><th>Du svarer</th></tr></thead>
+  <tbody>
+    <tr><td><code>config_type&gt;</code></td><td><code>1</code> (OneDrive Personal or Business)</td></tr>
+    <tr><td><code>config_driveid&gt;</code></td><td><code>1</code> (den første/eneste)</td></tr>
+    <tr><td><code>Is that okay?</code> / <code>Keep this "onedrive" remote?</code></td><td><code>y</code></td></tr>
+  </tbody>
+</table>
+
+<h2>Trin 4 – Opret den krypterede mappe</h2>
+<p>Stadig i <code>rclone config</code>:</p>
+<table>
+  <thead><tr><th style="width:52%">rclone spørger</th><th>Du svarer</th></tr></thead>
+  <tbody>
+    <tr><td><code>e/n/d/r/c/s/q&gt;</code></td><td><code>n</code> (ny)</td></tr>
+    <tr><td><code>name&gt;</code></td><td><code>krypt</code></td></tr>
+    <tr><td><code>Storage&gt;</code></td><td>skriv <code>crypt</code></td></tr>
+    <tr><td><code>remote&gt;</code></td><td><code>onedrive:Elmaaler-backup</code></td></tr>
+    <tr><td><code>filename_encryption&gt;</code></td><td><code>1</code> (standard)</td></tr>
+    <tr><td><code>directory_name_encryption&gt;</code></td><td><code>1</code> (true)</td></tr>
+    <tr><td><code>y/g&gt;</code> (adgangskode)</td><td><code>g</code> (lav en stærk), vælg <code>128</code>, og <code>y</code> for at bruge den</td></tr>
+    <tr><td><code>y/g/n&gt;</code> (salt / password2)</td><td><code>g</code>, <code>128</code>, <code>y</code></td></tr>
+    <tr><td><code>Edit advanced config?</code></td><td><code>n</code></td></tr>
+    <tr><td><code>Keep this "krypt" remote?</code></td><td><code>y</code></td></tr>
+    <tr><td><code>e/n/d/r/c/s/q&gt;</code></td><td><code>q</code> (afslut)</td></tr>
+  </tbody>
+</table>
+<div class="vigtigt"><b>⚠ Skriv de to adgangskoder ned, som rclone viser i trin 4</b>Gem dem i klubbens password manager eller i en
+  kuvert i pengeskabet – <b>samme dag</b>. Uden dem kan backupperne i OneDrive ikke læses, heller ikke af en it-kyndig.
+  Går serveren tabt, er de nødvendige for at gendanne.</div>
+
+<h2>Trin 5 – Slå kopieringen til</h2>
+<p>Skriv denne linje i Dockges <i>.env</i>-felt (eller i <code>.env</code>), gem, og genstart stacken:</p>
+<p><code>BACKUP_RCLONE_REMOTE=krypt:</code></p>
+
+<h2>Trin 6 – Afprøv</h2>
+<div class="billede bred">
+  <img src="billeder/system-database-sky.png" style="width:150mm">
+  <ol class="tal">
+    <li>Gå til <b>System → Database &amp; backup</b>. En <b>grå boks</b> med tidspunktet for sidste kopi betyder, at alt er i orden.</li>
+    <li>Tryk <b>Kopiér til skyen nu</b>, vent et minut og genindlæs siden. Tidspunktet skal være opdateret.</li>
+  </ol>
+</div>
+<p>Åbn OneDrive i browseren: mappen <code>Elmaaler-backup</code> indeholder nu filer med uforståelige navne. Det er korrekt – de er krypterede.</p>
+
+<h2>Daglig kontrol</h2>
+<div class="billede bred">
+  <img src="billeder/system-database-roed.png" style="width:150mm">
+  <ol class="tal">
+    <li><b>Rød boks "Ingen kopi uden for serveren"</b> – OneDrive er ikke sat op (<code>BACKUP_RCLONE_REMOTE</code> mangler).</li>
+  </ol>
+</div>
+<ul>
+  <li><b>Rød boks med "Seneste forsøg fejlede"</b> – kopieringen fejlede. Fejlen står i boksen og i <b>System → Log</b>, og havnekontoret får en mail.</li>
+  <li>Har OneDrive-forbindelsen ikke været brugt i lang tid, eller er klubbens adgangskode skiftet, skal den logges ind igen:
+    kør <code>docker exec -it elmaaler rclone config reconnect onedrive:</code> og følg trin 3.</li>
+</ul>
+
+<h2>Gendan fra OneDrive</h2>
+<p>Bruges, hvis serveren er gået tabt, eller databasen skal tilbage til en tidligere dato.</p>
+<ol class="trin">
+  <li>Sæt rclone op på den maskine, der skal gendanne (ny server eller din pc), som i trin 3 – men i trin 4 vælger du
+    <code>y</code> og skriver <b>de to gemte adgangskoder</b> i stedet for at lave nye.</li>
+  <li>Vis backupperne: <code>rclone ls krypt:</code></li>
+  <li>Hent den ønskede: <code>rclone copy krypt:elmaaler-20261201-030000.db.gz .</code></li>
+  <li>Stop stacken, pak filen ud (<code>gunzip</code>) og læg den som <code>elmaaler.db</code> i datamappen. Slet
+    <code>elmaaler.db-wal</code> og <code>elmaaler.db-shm</code>, hvis de findes, og start stacken igen.</li>
+  <li>Log ind og tjek, at brugere, tildelinger og opgørelser er, som de skal være.</li>
+</ol>
+<div class="tip"><b>Øv det én gang om året</b>Hent en backup til en test-pc og se, at den kan åbnes. En backup er først sikker, når man har set den virke.</div>
+
+<h1><span class="nr">5</span><div>Drift og vedligehold</div></h1>
 
 <h2>Opdatering af systemet</h2>
 <p>Programmet ligger i et Docker-image. Efter en ny version skal imaget altid bygges om – ellers kører serveren videre med den gamle kode:</p>
@@ -151,7 +271,7 @@
 <h2>Backup – det vigtigste</h2>
 <ul>
   <li>Backup tages hver nat kl. 03. Daglige gemmes 30 dage, den 1. i måneden 13 måneder.</li>
-  <li>En krypteret kopi lægges i klubbens OneDrive. Tjek jævnligt, at <b>System → Database &amp; backup</b> viser en grå boks med et nyt tidspunkt.</li>
+  <li>En krypteret kopi lægges i klubbens OneDrive. Tjek jævnligt, at <b>System → Database &amp; backup</b> viser en grå boks med et nyt tidspunkt. Se kapitel 4.</li>
   <li>De to krypteringskoder skal ligge i klubbens password manager eller i pengeskabet.</li>
   <li>Prøv en gendannelse én gang om året på en test-pc.</li>
 </ul>
