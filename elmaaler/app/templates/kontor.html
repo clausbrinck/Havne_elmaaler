@@ -15,8 +15,8 @@
 </div>
 
 <div class="gitter2">
-  <div class="kort"><h2>Samlet effekt, sidste døgn (kW, gns. pr. 15 min)</h2>{{ gr.linje(effektserie, 'kW', 170, 16) }}</div>
-  <div class="kort"><h2>Samlet forbrug pr. dag i {{ maaned | maaned_navn }} (kWh)</h2>{{ gr.soejler(dagserie, 'kWh', 170, 2 if dagserie|length > 16 else 1) }}</div>
+  <div class="kort"><h2>Samlet forbrug, alle målere</h2>{{ gr.panel(url_for('api_forbrug', maaler='alle'), 'dag') }}</div>
+  <div class="kort"><h2>Samlet forbrug, alle målere</h2>{{ gr.panel(url_for('api_forbrug', maaler='alle'), 'maaned') }}</div>
 </div>
 
 <div class="kort">

@@ -13,7 +13,7 @@
   <div class="tal"><div class="v">{{ gr.lqi(m.linkquality) }}</div><div class="l">Zigbee-signal (linkquality)</div></div>
 </div>
 
-<div class="kort"><h2>Forbrug pr. dag, sidste 30 dage (kWh)</h2>{{ gr.soejler(serie, 'kWh', 160, 3) }}</div>
+<div class="kort"><h2>Forbrug</h2>{{ gr.panel(url_for('api_forbrug', maaler=m.id), 'maaned', 160) }}</div>
 
 <div class="gitter2">
 <div class="kort">

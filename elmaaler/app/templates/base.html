@@ -22,7 +22,7 @@
       <a href="{{ url_for('system_status') }}" class="{{ 'aktiv' if ep.startswith('system_') }}">System</a>
     {% endif %}
     <a href="{{ url_for('min_side') }}" class="{{ 'aktiv' if ep == 'min_side' }}">Min side</a>
-    <a href="{{ url_for('min_konto') }}" class="{{ 'aktiv' if ep == 'min_konto' }}">Konto</a>
+    <a href="{{ url_for('min_konto') }}" class="{{ 'aktiv' if ep == 'min_konto' }}">Konto Administration</a>
   </nav>
   <span class="hvem skjul-mobil">{{ bruger.navn or bruger.email }}</span>
   <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf" value="{{ csrf() }}"><button>Log ud</button></form>

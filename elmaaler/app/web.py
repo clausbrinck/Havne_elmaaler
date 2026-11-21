@@ -10,7 +10,8 @@ from functools import wraps
 from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
                    send_from_directory, session, url_for)
 
-from . import backup, collector, config, db, forbrug, mailer, rapport, sikkerhed, simulering, vedligehold
+from . import (backup, collector, config, db, forbrug, mailer, perioder, rapport, sikkerhed, simulering,
+               vedligehold)
 from .tid import (nu, i_dag, maaned_str, maaned_grænser, maaned_navn, naeste_maaned,
                   parse_dato, dato_ts, fmt_tid, fmt_dato, siden, lokal)
 
@@ -231,13 +232,11 @@ def nulstil(token):
 def _maaler_kort(c, t, maaned):
     st = c.execute("SELECT * FROM status WHERE maaler_id=?", (t["maaler_id"],)).fetchone()
     ms = forbrug.bruger_maaned_status(c, t, maaned)
-    fra, til, d0, d1 = maaned_grænser(maaned)
-    serie = forbrug.dagsserie(c, [t["maaler_id"]], max(d0, parse_dato(t["start_dato"])), i_dag() + timedelta(days=1))
+    midnat = max(dato_ts(i_dag()), t["start_ts"])          # i dag = fra kl. 00:00
     return {
         "t": t, "st": st, "m": ms,
         "total_siden_start": forbrug.forbrug(c, t["maaler_id"], t["start_ts"], nu() + 1),
-        "serie": [(d.day, v) for d, v in serie.items()],
-        "i_dag": serie.get(i_dag(), 0.0),
+        "i_dag": forbrug.forbrug(c, t["maaler_id"], midnat, dato_ts(i_dag() + timedelta(days=1))),
     }
 
 
@@ -262,7 +261,7 @@ def mine_emails():
     with db.db() as c:
         c.execute(f"UPDATE brugere SET {', '.join(f + '=?' for f in felter)} WHERE id=?",
                   (*[1 if request.form.get(f) else 0 for f in felter], g.bruger["id"]))
-    flash("Dine email-valg er gemt.", "ok")
+    flash("Dine e-mail-valg er gemt.", "ok")
     return redirect(url_for("min_side"))
 
 
@@ -368,6 +367,40 @@ def min_konto():
     return render_template("konto.html")
 
 
+@app.route("/api/forbrug")
+@login_kraevet
+def api_forbrug():
+    """Data til periode-grafen (døgn/uge/måned/vinter).
+    maaler=<nr> eller 'alle' (kun havnekontor). egen=1: kun brugerens egne tildelingsperioder."""
+    visning = request.args.get("visning", "maaned")
+    if visning not in perioder.VISNINGER:
+        abort(400)
+    try:
+        d = parse_dato(request.args.get("dato", ""))
+    except ValueError:
+        d = i_dag()
+    egen = request.args.get("egen") == "1" or not er_kontor(g.bruger)
+    maaler = request.args.get("maaler", "")
+    with db.db() as c:
+        tilladt = None
+        if maaler == "alle":
+            if egen:
+                abort(403)
+            mid = None
+        else:
+            try:
+                mid = int(maaler)
+            except ValueError:
+                abort(400)
+            if egen:   # medlemmer ser kun forbrug fra de perioder, hvor måleren var deres
+                tilladt = [(r["start_ts"], r["slut_ts"]) for r in c.execute(
+                    "SELECT start_ts, slut_ts FROM tildelinger WHERE bruger_id=? AND maaler_id=?",
+                    (g.bruger["id"], mid))]
+                if not tilladt:
+                    abort(403)
+        return jsonify(perioder.serie(c, mid, visning, d, tilladt))
+
+
 @app.route("/api/live")
 @login_kraevet
 def api_live():
@@ -410,7 +443,6 @@ def kontor():
         tabel = _maaler_tabel(c, maaned)
         d0 = maaned_grænser(maaned)[2]
         dag = forbrug.dagsserie(c, None, d0, i_dag() + timedelta(days=1))
-        effekt = forbrug.effektserie(c, 24)
     aktive = [r for r in tabel if r["m"]["aktiv"]]
     tal = {
         "effekt_kw": sum((r["m"]["effekt_w"] or 0) for r in aktive) / 1000,
@@ -421,9 +453,7 @@ def kontor():
         "i_dag": dag.get(i_dag(), 0.0),
         "maaned": sum(dag.values()),
     }
-    return render_template("kontor.html", tabel=tabel, tal=tal, maaned=maaned, ha=collector.STATUS,
-                           dagserie=[(d.day, v) for d, v in dag.items()],
-                           effektserie=[(lokal(ts).strftime("%H:%M"), kw) for ts, kw in effekt])
+    return render_template("kontor.html", tabel=tabel, tal=tal, maaned=maaned, ha=collector.STATUS)
 
 
 def _find_eller_opret_bruger(c, email, navn=""):
@@ -517,13 +547,11 @@ def kontor_maaler(nr):
         hist = c.execute("SELECT t.*, b.navn, b.email FROM tildelinger t JOIN brugere b ON b.id=t.bruger_id "
                          "WHERE t.maaler_id=? ORDER BY t.start_ts DESC", (nr,)).fetchall()
         brugere = c.execute("SELECT id, navn, email FROM brugere WHERE aktiv=1 ORDER BY navn, email").fetchall()
-        d0 = i_dag() - timedelta(days=30)
-        serie = forbrug.dagsserie(c, [nr], d0, i_dag() + timedelta(days=1))
         aflaes = c.execute("SELECT * FROM aflaesninger WHERE maaler_id=? ORDER BY ts DESC LIMIT 12", (nr,)).fetchall()
         fra, til, *_ = maaned_grænser(maaned)
         kwh = forbrug.forbrug(c, nr, fra, til)
     return render_template("kontor_maaler.html", m=m, hist=hist, brugere=brugere, aflaes=aflaes,
-                           serie=[(d.strftime("%d/%m"), v) for d, v in serie.items()], kwh=kwh,
+                           kwh=kwh,
                            kat=forbrug.kategoriser(kwh, maaned), i_dag=i_dag().isoformat(), maaned=maaned)
 
 

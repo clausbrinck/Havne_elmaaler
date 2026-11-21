@@ -101,15 +101,6 @@ def dagsserie(c, maaler_ids, fra_dato, til_dato):
     return dict(sorted(ud.items()))
 
 
-def effektserie(c, timer=24):
-    """Samlet gennemsnitseffekt (kW) pr. aflæsningsinterval, sidste N timer."""
-    fra = nu() - timer * 3600
-    rows = c.execute("SELECT ts, SUM(delta_kwh) d, COUNT(*) n FROM alle_delta WHERE ts>? GROUP BY ts ORDER BY ts",
-                     (fra,)).fetchall()
-    from .config import STORE_MINUTES
-    return [(r["ts"], (r["d"] or 0) * 60 / STORE_MINUTES) for r in rows]
-
-
 # ---------------------------------------------------------------- opgørelser
 
 def _huller(fra, til, intervaller):

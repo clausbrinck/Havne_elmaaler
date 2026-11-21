@@ -1,16 +1,20 @@
 {% extends "base.html" %}
-{% block titel %}Konto{% endblock %}
+{% block titel %}Konto Administration{% endblock %}
 {% block indhold %}
-<h1>Konto</h1>
+<h1>Konto Administration</h1>
+<div class="mailadresse stor">
+  <div><span class="muted">Din e-mail – bruges både til log ind og til alle e-mails fra elmålerne</span><strong>{{ bruger.email }}</strong></div>
+  <a href="{{ url_for('min_side') }}#e-mail" class="knap sek lille">Vælg hvilke e-mails du får</a>
+</div>
 <div class="gitter2">
   <div class="kort">
-    <h2>Skift email</h2>
-    <p class="muted">Nuværende: {{ bruger.email }}. Emailen er også dit brugernavn.</p>
+    <h2>Skift e-mail</h2>
+    <p class="muted">Den nye e-mail bliver også dit brugernavn. Der sendes en besked til den gamle adresse.</p>
     <form method="post">
       <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="email">
-      <div class="felt"><label>Ny email</label><input type="email" name="email" required></div>
+      <div class="felt"><label>Ny e-mail</label><input type="email" name="email" required></div>
       <div class="felt"><label>Din nuværende adgangskode</label><input type="password" name="nuvaerende" autocomplete="current-password" required></div>
-      <button>Skift email</button>
+      <button>Skift e-mail</button>
     </form>
   </div>
   <div class="kort">
@@ -25,7 +29,7 @@
   </div>
   {% if er_kontor %}
   <div class="kort">
-    <h2>Mine havnekontor-mails</h2>
+    <h2>Mine havnekontor-e-mails</h2>
     <form method="post">
       <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="kontor_mails">
       <label class="check"><input type="checkbox" name="mail_offline" {{ 'checked' if bruger.mail_offline }}> <span>Mangler forbindelse til måler nr. … (og fejl på Home Assistant / backup)</span></label>

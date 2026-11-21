@@ -47,3 +47,157 @@
     f.addEventListener("submit", function (e) { if (!confirm(f.getAttribute("data-bekraeft"))) e.preventDefault(); });
   });
 })();
+
+// Periode-graf: Døgn / Uge / Måned / Vinter med bladring (‹ › og swipe) og tooltip ved tryk på en søjle.
+(function () {
+  var NS = "http://www.w3.org/2000/svg";
+  function dk(x, d) {
+    return Number(x).toLocaleString("da-DK", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function kwh(v) { return dk(v, v >= 100 ? 0 : v >= 10 ? 1 : 2) + " kWh"; }
+  function lav(navn, attr, tekst) {
+    var el = document.createElementNS(NS, navn);
+    Object.keys(attr).forEach(function (k) { el.setAttribute(k, attr[k]); });
+    if (tekst != null) el.textContent = tekst;
+    return el;
+  }
+
+  document.querySelectorAll(".periode-graf").forEach(function (boks) {
+    var kilde = boks.getAttribute("data-kilde");
+    var H = +boks.getAttribute("data-h") || 170, W = 640, TOP = 14, BUND = 22, VENSTRE = 34;
+    // tegn i skærmens egen bredde, så tal og etiketter ikke bliver bittesmå på mobilen
+    function bredde() { return Math.max(300, Math.round(svgBoks.clientWidth) || 640); }
+    var visning = boks.getAttribute("data-visning"), data = null, nr = 0;
+    var svgBoks = boks.querySelector(".pg-svg"), tip = boks.querySelector(".tip");
+    var $ = function (s) { return boks.querySelector(s); };
+
+    function hent(v, dato) {
+      var url = kilde + (kilde.indexOf("?") >= 0 ? "&" : "?") + "visning=" + v + (dato ? "&dato=" + dato : "");
+      var mit = ++nr;
+      boks.classList.add("henter");
+      fetch(url, { credentials: "same-origin" })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (mit !== nr) return;             // et nyere klik er på vej
+          boks.classList.remove("henter");
+          if (!j) { $("[data-titel]").textContent = "Kunne ikke hente data"; return; }
+          data = j; visning = j.visning; tegn();
+        })
+        .catch(function () { boks.classList.remove("henter"); });
+    }
+
+    function tegn() {
+      skjulTip();
+      boks.querySelectorAll(".segment button").forEach(function (b) {
+        b.classList.toggle("aktiv", b.getAttribute("data-v") === visning);
+      });
+      $("[data-titel]").textContent = data.titel;
+      $("[data-sum]").textContent = "I alt " + kwh(data.total);
+      $("[data-ekstra]").textContent = data.ekstra || "";
+      $("[data-enhed]").textContent = data.enhed + " · tryk på en søjle for at se tallet";
+      $('[data-gaa="forrige"]').disabled = !data.forrige;
+      $('[data-gaa="naeste"]').disabled = !data.naeste;
+      $('[data-gaa="nu"]').hidden = data.er_nu;
+
+      W = bredde();
+      var p = data.punkter, n = Math.max(p.length, 1);
+      var maks = Math.max.apply(null, p.map(function (x) { return x.v; }).concat([0.1]));
+      var bw = (W - VENSTRE) / n, hoejde = H - TOP - BUND;
+      var svg = lav("svg", { "class": "graf", viewBox: "0 0 " + W + " " + H, role: "img" });
+      [0, 0.5, 1].forEach(function (f) {
+        var y = TOP + hoejde * (1 - f);
+        svg.appendChild(lav("line", { "class": "akse", x1: VENSTRE, x2: W, y1: y, y2: y }));
+        svg.appendChild(lav("text", { x: VENSTRE - 4, y: y + 3, "text-anchor": "end" }, dk(maks * f, maks >= 10 ? 0 : 1)));
+      });
+      p.forEach(function (pt, i) {
+        var bh = Math.max(hoejde * pt.v / maks, pt.v > 0 ? 1 : 0);
+        svg.appendChild(lav("rect", { "class": "s" + (pt.nu ? " nu" : ""), "data-i": i, x: VENSTRE + i * bw + bw * 0.15,
+          y: H - BUND - bh, width: bw * 0.7, height: bh, rx: 2 }));
+        // usynligt felt i hele søjlens højde, så små søjler også er nemme at ramme med en finger
+        svg.appendChild(lav("rect", { "class": "hit", "data-i": i, x: VENSTRE + i * bw, y: TOP, width: bw, height: hoejde + BUND }));
+        if (i % data.hver === 0)
+          svg.appendChild(lav("text", { x: VENSTRE + i * bw + bw / 2, y: H - 7, "text-anchor": "middle" }, pt.l));
+      });
+      svgBoks.innerHTML = "";
+      svgBoks.appendChild(svg);
+    }
+
+    function visTip(i) {
+      var pt = data.punkter[i], svg = svgBoks.querySelector("svg");
+      boks.querySelectorAll("rect.s.valgt").forEach(function (r) { r.classList.remove("valgt"); });
+      var bar = svg.querySelector('rect.s[data-i="' + i + '"]');
+      bar.classList.add("valgt");
+      tip.innerHTML = "";
+      var t = document.createElement("strong"); t.textContent = pt.t; tip.appendChild(t);
+      var v = document.createElement("div"); v.className = "tal-tip"; v.textContent = kwh(pt.v); tip.appendChild(v);
+      if (pt.x) { var x = document.createElement("div"); x.textContent = pt.x; tip.appendChild(x); }
+      if (pt.ned) {
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "lille";
+        b.textContent = pt.ned[0] === "dag" ? "Vis døgnet time for time ›" : "Vis måneden dag for dag ›";
+        b.addEventListener("click", function (e) { e.stopPropagation(); hent(pt.ned[0], pt.ned[1]); });
+        tip.appendChild(b);
+      }
+      tip.hidden = false;
+      var bb = boks.getBoundingClientRect(), rb = bar.getBoundingClientRect(), sb = svg.getBoundingClientRect();
+      var midt = rb.left + rb.width / 2 - bb.left;
+      var top = Math.min(rb.top, sb.top + sb.height - BUND * sb.height / H) - bb.top;
+      var halv = tip.offsetWidth / 2;
+      var left = Math.max(halv + 2, Math.min(bb.width - halv - 2, midt));
+      tip.style.left = left + "px";
+      tip.style.top = top + "px";
+      tip.style.setProperty("--pil", (midt - left + halv) + "px");
+    }
+    function skjulTip() {
+      tip.hidden = true;
+      boks.querySelectorAll("rect.s.valgt").forEach(function (r) { r.classList.remove("valgt"); });
+    }
+
+    svgBoks.addEventListener("click", function (e) {
+      var i = e.target.getAttribute && e.target.getAttribute("data-i");
+      if (i == null) { skjulTip(); return; }
+      if (!tip.hidden && boks.querySelector('rect.s.valgt[data-i="' + i + '"]')) { skjulTip(); return; }
+      visTip(+i);
+    });
+    document.addEventListener("click", function (e) { if (!boks.contains(e.target)) skjulTip(); });
+
+    boks.querySelectorAll(".segment button").forEach(function (b) {
+      b.addEventListener("click", function () {
+        // behold den viste periode: fx fra en uge til den måned ugen ligger i
+        hent(b.getAttribute("data-v"), data && !data.er_nu ? data.dato : "");
+      });
+    });
+    function gaa(hvor) {
+      if (hvor === "nu") return hent(visning, "");
+      if (data && data[hvor]) hent(visning, data[hvor]);
+    }
+    boks.querySelectorAll("[data-gaa]").forEach(function (b) {
+      b.addEventListener("click", function () { gaa(b.getAttribute("data-gaa")); });
+    });
+
+    // swipe til venstre = næste periode, til højre = forrige
+    var sx = null, sy = null;
+    svgBoks.addEventListener("touchstart", function (e) {
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    }, { passive: true });
+    svgBoks.addEventListener("touchend", function (e) {
+      if (sx == null) return;
+      var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+      sx = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) gaa(dx < 0 ? "naeste" : "forrige");
+    }, { passive: true });
+
+    var sidstBredde = 0;
+    window.addEventListener("resize", function () {
+      if (data && Math.abs(bredde() - sidstBredde) > 20) { sidstBredde = bredde(); tegn(); }
+    });
+    hent(visning, "");
+  });
+
+  // Til/Fra-mærkerne ved e-mail-valgene følger afkrydsningen
+  document.querySelectorAll("label.valg input[type=checkbox]").forEach(function (c) {
+    c.addEventListener("change", function () {
+      c.parentNode.querySelector(".til-fra").textContent = c.checked ? "Til" : "Fra";
+    });
+  });
+})();

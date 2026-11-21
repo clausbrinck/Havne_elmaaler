@@ -1,43 +1,20 @@
-{# Simple SVG-grafer uden JavaScript-biblioteker. data = liste af (etiket, værdi) #}
-{% macro soejler(data, enhed='kWh', h=170, hver=1) %}
-{% set W = 640 %}{% set top = 14 %}{% set bund = 22 %}{% set venstre = 34 %}
-{% set vals = data | map('last') | list %}
-{% set maks = [vals | max if vals else 0, 0.1] | max %}
-{% set n = [data | length, 1] | max %}
-{% set bw = (W - venstre) / n %}
-<svg class="graf" viewBox="0 0 {{ W }} {{ h }}" role="img">
-  {% for f in [0, 0.5, 1] %}
-    {% set y = top + (h - top - bund) * (1 - f) %}
-    <line class="akse" x1="{{ venstre }}" x2="{{ W }}" y1="{{ y }}" y2="{{ y }}"/>
-    <text x="{{ venstre - 4 }}" y="{{ y + 3 }}" text-anchor="end">{{ (maks * f) | dk(0 if maks >= 10 else 1) }}</text>
-  {% endfor %}
-  {% for lab, v in data %}
-    {% set bh = (h - top - bund) * v / maks %}
-    <rect class="s" x="{{ venstre + loop.index0 * bw + bw * 0.15 }}" y="{{ h - bund - bh }}" width="{{ bw * 0.7 }}" height="{{ [bh, 0] | max }}" rx="2"><title>{{ lab }}: {{ v | dk(1) }} {{ enhed }}</title></rect>
-    {% if loop.index0 % hver == 0 %}<text x="{{ venstre + loop.index0 * bw + bw / 2 }}" y="{{ h - 7 }}" text-anchor="middle">{{ lab }}</text>{% endif %}
-  {% endfor %}
-</svg>
-{% endmacro %}
-
-{% macro linje(data, enhed='kW', h=170, hver=8) %}
-{% set W = 640 %}{% set top = 14 %}{% set bund = 22 %}{% set venstre = 34 %}
-{% set vals = data | map('last') | list %}
-{% set maks = [vals | max if vals else 0, 0.1] | max %}
-{% set n = [data | length - 1, 1] | max %}
-{% set ns = namespace(p='') %}
-{% for lab, v in data %}{% set ns.p = ns.p ~ (venstre + loop.index0 * (W - venstre) / n) ~ ',' ~ (top + (h - top - bund) * (1 - v / maks)) ~ ' ' %}{% endfor %}
-<svg class="graf" viewBox="0 0 {{ W }} {{ h }}" role="img">
-  {% for f in [0, 0.5, 1] %}
-    {% set y = top + (h - top - bund) * (1 - f) %}
-    <line class="akse" x1="{{ venstre }}" x2="{{ W }}" y1="{{ y }}" y2="{{ y }}"/>
-    <text x="{{ venstre - 4 }}" y="{{ y + 3 }}" text-anchor="end">{{ (maks * f) | dk(0 if maks >= 10 else 1) }}</text>
-  {% endfor %}
-  {% if data %}
-  <polygon class="flade" points="{{ venstre }},{{ h - bund }} {{ ns.p }}{{ W }},{{ h - bund }}"/>
-  <polyline class="lin" points="{{ ns.p }}"/>
-  {% for lab, v in data %}{% if loop.index0 % hver == 0 %}<text x="{{ venstre + loop.index0 * (W - venstre) / n }}" y="{{ h - 7 }}" text-anchor="middle">{{ lab }}</text>{% endif %}{% endfor %}
-  {% else %}<text x="{{ W / 2 }}" y="{{ h / 2 }}" text-anchor="middle">Ingen data endnu</text>{% endif %}
-</svg>
+{# Interaktiv forbrugsgraf: Døgn / Uge / Måned / Vinter. Data hentes fra /api/forbrug og tegnes som SVG
+   af static/app.js. Bladr med ‹ ›, swipe til siden, eller tryk på en søjle for at se tallet. #}
+{% macro panel(kilde, visning='maaned', h=170) %}
+<div class="periode-graf" data-kilde="{{ kilde }}" data-visning="{{ visning }}" data-h="{{ h }}">
+  <div class="segment" role="tablist">
+    <button type="button" data-v="dag">Døgn</button><button type="button" data-v="uge">Uge</button><button type="button" data-v="maaned">Måned</button><button type="button" data-v="vinter">Vinter</button>
+  </div>
+  <div class="pg-nav">
+    <button type="button" class="sek" data-gaa="forrige" aria-label="Forrige periode">‹</button>
+    <div class="pg-titel"><strong data-titel>Henter…</strong><span data-sum></span><span class="muted" data-ekstra></span></div>
+    <button type="button" class="sek" data-gaa="naeste" aria-label="Næste periode">›</button>
+  </div>
+  <div class="pg-svg"></div>
+  <div class="pg-fod"><span class="muted" data-enhed></span>
+    <button type="button" class="sek lille" data-gaa="nu" hidden>Gå til nu</button></div>
+  <div class="tip" hidden></div>
+</div>
 {% endmacro %}
 
 {% macro gruppe(nr, label) %}<span class="badge g{{ nr }}">{{ label }}</span>{% endmacro %}

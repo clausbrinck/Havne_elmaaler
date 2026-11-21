@@ -4,6 +4,7 @@
   --r: 10px;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--tekst); background: var(--sand); }
 a { color: var(--hav2); }
@@ -68,7 +69,7 @@ header.top button { background: transparent; border-color: rgba(255,255,255,.4);
 .bar > div { height: 100%; background: linear-gradient(90deg, var(--hav2), #3f8fc4); }
 .bar.adv > div { background: linear-gradient(90deg, #e3a21a, var(--adv)); }
 svg.graf { width: 100%; height: auto; display: block; }
-svg.graf .s { fill: #3f8fc4; } svg.graf .s:hover { fill: var(--hav); }
+svg.graf .s { fill: #3f8fc4; }
 svg.graf .akse { stroke: var(--linje); } svg.graf text { font-size: 10px; fill: var(--graa); }
 svg.graf .lin { fill: none; stroke: var(--hav2); stroke-width: 2; } svg.graf .flade { fill: rgba(63,143,196,.15); }
 .faner { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -99,3 +100,43 @@ nav.faner a { padding: 7px 12px; text-decoration: none; color: var(--hav2); bord
 nav.faner a.aktiv { background: var(--kort); border: 1px solid var(--linje); border-bottom-color: var(--kort); margin-bottom: -1px; font-weight: 600; }
 .badge.admin { background: #5b2a86; color: #fff; }
 table input[type=text].kompakt { width: 100%; min-width: 90px; padding: 3px 6px; }
+
+/* periode-graf (Døgn / Uge / Måned / Vinter) */
+.periode-graf { position: relative; }
+.segment { display: flex; border: 1px solid var(--hav2); border-radius: 8px; overflow: hidden; max-width: 420px; }
+.segment button { flex: 1; background: #fff; color: var(--hav2); border: 0; border-radius: 0; padding: 7px 6px; }
+.segment button + button { border-left: 1px solid var(--hav2); }
+.segment button.aktiv { background: var(--hav2); color: #fff; }
+.pg-nav { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; }
+.pg-nav > button { font-size: 22px; line-height: 1; padding: 6px 16px; }
+.pg-nav > button:disabled { opacity: .3; cursor: default; }
+.pg-titel { flex: 1; text-align: center; line-height: 1.35; }
+.pg-titel strong { display: block; color: var(--hav); }
+.pg-titel span { display: block; font-size: 13px; }
+.pg-svg { touch-action: pan-y; min-height: 100px; transition: opacity .15s; }
+.periode-graf.henter .pg-svg { opacity: .4; }
+.pg-fod { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+svg.graf .hit { fill: transparent; cursor: pointer; }
+svg.graf .s.nu { fill: #8fc0e0; }
+svg.graf .s.valgt { fill: var(--hav); }
+.tip { position: absolute; transform: translate(-50%, calc(-100% - 9px)); background: var(--tekst); color: #fff;
+  font-size: 13px; line-height: 1.4; padding: 7px 11px; border-radius: 8px; white-space: nowrap; z-index: 5;
+  box-shadow: 0 3px 10px rgba(0,0,0,.25); text-align: center; }
+.tip::after { content: ""; position: absolute; left: var(--pil, 50%); bottom: -6px; margin-left: -6px;
+  border: 6px solid transparent; border-top-color: var(--tekst); border-bottom: 0; }
+.tip .tal-tip { font-size: 17px; font-weight: 700; }
+.tip button { margin-top: 6px; background: #fff; color: var(--hav2); border-color: #fff; }
+
+/* tydelig e-mail-adresse og e-mail-valg */
+.mailadresse { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: var(--sky); border: 1px solid #c9dcea; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+.mailadresse strong { display: block; font-size: 17px; color: var(--hav); word-break: break-all; }
+.mailadresse.stor { margin-bottom: 18px; } .mailadresse.stor strong { font-size: 20px; }
+label.valg { align-items: center; border: 1px solid var(--linje); border-radius: 8px; padding: 8px 10px; margin: 0 0 8px; cursor: pointer; }
+label.valg input { margin-top: 0; }
+label.valg > span:first-of-type { flex: 1; }
+label.valg strong { display: block; font-weight: 600; }
+label.valg .muted { display: block; }
+label.valg .til-fra { font-size: 12px; font-weight: 700; padding: 1px 9px; border-radius: 99px; background: #eef0f2; color: var(--graa); }
+label.valg input:checked ~ .til-fra { background: #e3f4ea; color: var(--ok); }
+label.valg:has(input:checked) { border-color: #bfe3cd; background: #f6fcf8; }

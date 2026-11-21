@@ -14,7 +14,9 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 
 - Én Python-proces: Flask-app serveret af waitress + én baggrundstråd (`jobs.koer`).
 - Afhængigheder bevidst minimale: flask, waitress, requests, tzdata. Ingen JS-biblioteker,
-  ingen CDN (kører på lokalt net). Grafer er SVG i Jinja-makroer (`templates/_graf.html`).
+  ingen CDN (kører på lokalt net). Grafer: `gr.panel(...)` i `templates/_graf.html` tegnes som SVG af
+  `static/app.js` ud fra `/api/forbrug` – Døgn/Uge/Måned/Vinter, bladr med ‹ › eller swipe, tryk på søjle = tooltip.
+  Døgn er altid kl. 00–24. Medlemmer (eller `egen=1`) ser kun forbrug fra egne tildelingsperioder.
 - Alt UI og alle tekster/variabelnavne er på dansk.
 
 ## Filer (elmaaler/app/)
@@ -26,6 +28,7 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 | `collector.py` | henter fra Home Assistant (`HomeAssistant`) eller `Simulator`; skriver tabel `status` |
 | `jobs.py` | hovedløkke: poll, gem aflæsning hvert 15. min, advarsler, offline-tjek, planlagte mails, månedslås, backup |
 | `forbrug.py` | forbrugsberegning, forbrugsgrupper, månedsopgørelser |
+| `perioder.py` | data til periode-grafen (`/api/forbrug`): døgn pr. time, uge/måned pr. dag, vinter pr. måned |
 | `rapport.py` | CSV-udtræk og mailtekster |
 | `web.py` | alle routes: Min side (bruger), `/kontor/...` (havnekontor), `/system/...` (admin) |
 | `simulering.py`, `vedligehold.py` | debug-simuleret forbrug; DB-info, VACUUM, integritetstjek, nulstil fejlmålt forbrug |
