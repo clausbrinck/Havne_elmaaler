@@ -128,8 +128,19 @@ Webinterfacet skal kunne nås fra internettet, hvis medlemmerne skal bruge det h
   og peg et underdomæne, fx `el.aabenraa-sejlclub.dk`, på `http://localhost:8000`.
 - **Caddy** som reverse proxy med automatisk Let's Encrypt-certifikat (kræver port 443 åben).
 
-Når siden kører på HTTPS: sæt `COOKIE_SECURE=true` og `BASE_URL=https://el.aabenraa-sejlclub.dk` i `.env`
-og kør `docker compose up -d`.
+Når siden kører på HTTPS: sæt `BASE_URL` til den offentlige adresse, fx
+`BASE_URL=https://el.aabenraa-sejlclub.dk`, i `.env` og kør `docker compose up -d`
+(i Dockge: ret `.env`-feltet og tryk **Deploy**).
+
+- `BASE_URL` bruges i alle links i mails og i nulstil-/invitationslinks. Står den til `localhost`,
+  virker linkene kun på serveren selv. Havnekontoret får en rød advarsel øverst på siden, hvis
+  `BASE_URL` ikke passer med den adresse, siden bliver brugt på.
+- Når `BASE_URL` starter med `https://`, bliver login-cookien automatisk "secure" (sendes kun over HTTPS).
+  Log så også ind via domænet hjemme på havnen – login via `http://192.168.x.x:8000` virker ikke længere.
+  Vil man fortsat kunne logge ind via lokal IP, sæt `COOKIE_SECURE=false` (mindre sikkert).
+- `PROXY_HOPS=1` (standard) betyder, at programmet stoler på én proxy foran sig (Cloudflare Tunnel,
+  Caddy, Nginx) og bruger dens `X-Forwarded-For/-Proto/-Host`. Så ser login-spærringen brugerens rigtige
+  IP i stedet for tunnelens. Kører siden uden proxy, kan den sættes til `0`.
 
 Sikkerhed i programmet: adgangskoder gemmes som PBKDF2-hash, login spærres 15 min efter
 10 forkerte forsøg, alle formularer har CSRF-beskyttelse, og nulstil-links udløber efter 24 timer

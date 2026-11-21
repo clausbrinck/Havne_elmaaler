@@ -28,6 +28,7 @@
   {% endif %}
 </div></header>
 <main>
+  {% set adv = base_url_advarsel() %}{% if adv %}<div class="flash fejl">⚠ {{ adv }}</div>{% endif %}
   {% for kat, besked in get_flashed_messages(with_categories=true) %}
     <div class="flash {{ kat }}">{{ besked }}</div>
   {% endfor %}
