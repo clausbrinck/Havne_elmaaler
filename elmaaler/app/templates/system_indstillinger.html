@@ -1,22 +1,16 @@
 {% extends "base.html" %}
 {% import "_graf.html" as gr %}
-{% block titel %}Indstillinger{% endblock %}
+{% block titel %}System – indstillinger{% endblock %}
 {% block indhold %}
-<h1>Indstillinger</h1>
+<h1>Systemadministration</h1>
+{% include "_system_nav.html" %}
 
 <div class="gitter2">
 <div class="kort">
-  <h2>Emails til havnekontoret</h2>
+  <h2>Mails – fælles opsætning</h2>
   <form method="post">
     <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="mails">
-    <h3>Mine emails ({{ bruger.email }})</h3>
-    <label class="check"><input type="checkbox" name="mail_offline" {{ 'checked' if bruger.mail_offline }}> <span>Mangler forbindelse til måler nr. … (og fejl på Home Assistant / backup)</span></label>
-    <label class="check"><input type="checkbox" name="mail_dag" {{ 'checked' if bruger.mail_dag }}> <span>Samlet forbrug hvert døgn</span></label>
-    <label class="check"><input type="checkbox" name="mail_uge" {{ 'checked' if bruger.mail_uge }}> <span>Samlet forbrug hver uge</span></label>
-    <label class="check"><input type="checkbox" name="mail_maaned" {{ 'checked' if bruger.mail_maaned }}> <span>Månedsopgørelse med CSV-fil vedhæftet</span></label>
-    <p class="muted">Andre havnekontor-brugere vælger selv under denne side.</p>
-
-    <h3>Ekstra modtagere (fx kasserer)</h3>
+    <h3>Ekstra modtagere af havnekontor-mails (fx kasserer)</h3>
     <div class="felt"><input type="text" name="ekstra_kontor_emails" value="{{ ind.ekstra_kontor_emails }}" placeholder="kasserer@…, formand@…"></div>
     <div class="felter">
       <label class="check"><input type="checkbox" name="ekstra_mail_offline" {{ 'checked' if ind.ekstra_mail_offline }}> <span>Offline</span></label>
@@ -24,6 +18,7 @@
       <label class="check"><input type="checkbox" name="ekstra_mail_uge" {{ 'checked' if ind.ekstra_mail_uge }}> <span>Uge</span></label>
       <label class="check"><input type="checkbox" name="ekstra_mail_maaned" {{ 'checked' if ind.ekstra_mail_maaned }}> <span>Måned</span></label>
     </div>
+    <p class="muted">Havnekontorets egne brugere vælger selv deres mails under <a href="{{ url_for('min_konto') }}">Konto</a>.</p>
 
     <h3>Tidspunkter og grænser (gælder alle)</h3>
     <div class="felter">
@@ -36,7 +31,6 @@
   </form>
 </div>
 
-<div>
 <div class="kort">
   <h2>Mailserver</h2>
   {% if smtp %}
@@ -46,17 +40,6 @@
     <div class="flash fejl">Der er ikke sat en mailserver op. Udfyld SMTP_… i <code>.env</code> og genstart.</div>
   {% endif %}
   <p class="muted">Link i mails: <code>{{ config.BASE_URL }}</code></p>
-</div>
-
-<div class="kort">
-  <h2>Backup</h2>
-  <p class="muted">Automatisk hver nat kl. {{ config.BACKUP_TIME }}, gemmes {{ config.BACKUP_KEEP_DAYS }} dage i <code>{{ config.BACKUP_DIR }}</code>{% if config.BACKUP_EXTRA_DIR %} og kopieres til <code>{{ config.BACKUP_EXTRA_DIR }}</code>{% endif %}.</p>
-  <form method="post"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="sek" name="handling" value="backup">Lav backup nu</button></form>
-  <table style="margin-top:10px"><tbody>
-    {% for b in backups[:10] %}<tr><td><a href="{{ url_for('kontor_backup_hent', navn=b.navn) }}">{{ b.navn }}</a></td><td class="n">{{ b.kb }} kB</td></tr>
-    {% else %}<tr><td class="muted">Ingen backups endnu.</td></tr>{% endfor %}
-  </tbody></table>
-</div>
 </div>
 </div>
 

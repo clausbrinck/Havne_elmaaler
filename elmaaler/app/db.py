@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS brugere (
     baad          TEXT NOT NULL DEFAULT '',     -- forældet: båd står nu på tildelingen
     telefon       TEXT NOT NULL DEFAULT '',
     pw_hash       TEXT,
-    rolle         TEXT NOT NULL DEFAULT 'bruger',   -- bruger | kontor
+    rolle         TEXT NOT NULL DEFAULT 'bruger',   -- bruger | kontor (havnekontor) | admin (system)
     aktiv         INTEGER NOT NULL DEFAULT 1,
     oprettet      INTEGER,
     sidste_login  INTEGER,

@@ -59,19 +59,30 @@ docker compose up -d --build
 docker compose logs -f elmaaler        # se at det kører – stop visning med Ctrl+C
 ```
 
-Åbn `http://<serverens-ip>:8000` og log ind med `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
+Åbn `http://<serverens-ip>:8000` og log ind med `ADMIN_EMAIL`/`ADMIN_PASSWORD` – det er **systemadministrator**-kontoen.
 **Skift koden** under *Konto* med det samme.
 
-Under **Netværk & status** skal "Home Assistant" stå som OK, og "Målere fundet" skal passe.
+Under **System → Status** skal "Home Assistant" stå som OK, og "Målere fundet" skal passe.
+
+## Brugerlag
+
+| Rolle | Kan |
+|---|---|
+| **Bruger** (medlem) | se eget forbrug på *Min side*, vælge mails, få en forbrugsrapport sendt på mail |
+| **Havnekontor** | alt ovenfor + oprette/fjerne brugere, tildele målere og fjerne dem igen (også samlet under *Brugere → Målere der ikke er i brug*), opgørelser og CSV |
+| **Systemadministrator** | alt ovenfor + *System*: status/Zigbee, systemlog, måleropsætning (placering/aktiv), database og backup, indstillinger (grupper, priser, mails), debug |
+
+Kontoen fra `ADMIN_EMAIL` bliver automatisk systemadministrator (også ved opdatering fra en ældre version).
+Kun en systemadministrator kan give andre administrator-rollen.
 
 ## 5. Opsætning i webinterfacet
 
-1. **Indstillinger** → tryk *Send testmail til mig*. Kommer den ikke, se *Hændelseslog* under Netværk.
+1. **System → Indstillinger** → tryk *Send testmail til mig*. Kommer den ikke, se **System → Systemlog**.
 2. **Brugere → Importér fra CSV** – lav et regneark med kolonnerne
    `maaler;placering;email;navn;baad;telefon;start_dato`, gem som *CSV UTF-8*, og importér.
    Sæt flueben i *Send invitation*, så får medlemmerne en mail og vælger selv adgangskode.
 3. Opret Flemming og andre på havnekontoret med rollen **Havnekontor**.
-4. Under **Indstillinger** vælger hver kontor-bruger sine mails, og evt. kassereren tilføjes som ekstra modtager.
+4. Under **Konto** vælger hver kontor-bruger sine mails. Kassereren kan tilføjes som ekstra modtager under **System → Indstillinger**.
 
 ## Hvornår sker hvad
 
@@ -84,7 +95,7 @@ Under **Netværk & status** skal "Home Assistant" stå som OK, og "Målere funde
 | kl. 06:00 | døgnopgørelser; mandag ugeopgørelser; den 1. månedsopgørelser (kontoret får CSV vedhæftet) |
 | den 1. kl. 00:20 | forrige måned låses |
 
-Tidspunkter og grænser ændres under Indstillinger (backup-tid i `.env`).
+Tidspunkter og grænser ændres under System → Indstillinger (backup-tid i `.env`).
 
 Uden forbindelse til Home Assistant tæller målerne videre selv. Når forbindelsen er tilbage,
 kommer forbruget med i næste aflæsning. Kontoret får mail, hvis Home Assistant har været væk i mere end en time.
@@ -98,7 +109,7 @@ Backups ligger i `data/backup/` som `elmaaler-ÅÅÅÅMMDD-TTMMSS.db.gz` og gemm
 2. I `docker-compose.yml`: fjern `#` foran linjen `- /mnt/usb-backup:/backup-usb`.
 3. I `.env`: `BACKUP_EXTRA_DIR=/backup-usb`, og kør `docker compose up -d`.
 
-Backups kan også hentes fra **Indstillinger** i webinterfacet.
+Backups kan også laves og hentes under **System → Database & backup** i webinterfacet.
 
 Gendannelse:
 

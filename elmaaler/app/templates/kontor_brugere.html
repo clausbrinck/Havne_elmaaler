@@ -1,7 +1,8 @@
 {% extends "base.html" %}
+{% import "_rolle.html" as rl %}
 {% block titel %}Brugere{% endblock %}
 {% block indhold %}
-<div class="maaler-hoved"><h1>Brugere</h1><a class="knap sek" href="{{ url_for('kontor_import') }}">Importér fra CSV</a></div>
+<div class="maaler-hoved"><h1>Brugere</h1><span class="linje" style="display:flex;gap:8px"><a class="knap sek" href="{{ url_for('kontor_ubrugte') }}">Målere der ikke er i brug</a><a class="knap sek" href="{{ url_for('kontor_import') }}">Importér fra CSV</a></span></div>
 
 <div class="kort">
   <details {{ 'open' if not brugere }}>
@@ -11,8 +12,8 @@
       <div class="felter">
         <div class="felt"><label>Email *</label><input type="email" name="email" required></div>
         <div class="felt"><label>Navn</label><input type="text" name="navn"></div>
-                <div class="felt"><label>Telefon</label><input type="text" name="telefon"></div>
-        <div class="felt"><label>Rolle</label><select name="rolle"><option value="bruger">Bruger</option><option value="kontor">Havnekontor</option></select></div>
+        <div class="felt"><label>Telefon</label><input type="text" name="telefon"></div>
+        <div class="felt"><label>Rolle</label>{{ rl.vaelger('bruger', er_admin) }}</div>
         <div class="felt"><label>Måler nr. (valgfri)</label><input type="number" name="maaler" min="1"></div>
         <div class="felt"><label>Båd (på måleren)</label><input type="text" name="baad"></div>
         <div class="felt"><label>Tildelt fra</label><input type="date" name="start_dato" value="{{ i_dag }}"></div>
@@ -32,7 +33,7 @@
     <tbody>
     {% for b in brugere %}
       <tr {% if not b.aktiv %}style="opacity:.5"{% endif %}>
-        <td><a href="{{ url_for('kontor_bruger', bid=b.id) }}">{{ b.navn or '(uden navn)' }}</a> {% if b.rolle == 'kontor' %}<span class="badge kontor">kontor</span>{% endif %}</td>
+        <td><a href="{{ url_for('kontor_bruger', bid=b.id) }}">{{ b.navn or '(uden navn)' }}</a> {{ rl.badge(b.rolle) }}</td>
         <td>{{ b.email }}</td><td class="skjul-mobil">{{ b.baade or '' }}</td>
         <td>{{ b.maalere or '' }}</td>
         <td class="skjul-mobil">{{ b.sidste_login | siden }}</td>

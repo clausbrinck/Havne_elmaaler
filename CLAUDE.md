@@ -27,7 +27,8 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 | `jobs.py` | hovedløkke: poll, gem aflæsning hvert 15. min, advarsler, offline-tjek, planlagte mails, månedslås, backup |
 | `forbrug.py` | forbrugsberegning, forbrugsgrupper, månedsopgørelser |
 | `rapport.py` | CSV-udtræk og mailtekster |
-| `web.py` | alle routes (bruger + havnekontor) |
+| `web.py` | alle routes: Min side (bruger), `/kontor/...` (havnekontor), `/system/...` (admin) |
+| `simulering.py`, `vedligehold.py` | debug-simuleret forbrug; DB-info, VACUUM, integritetstjek, nulstil fejlmålt forbrug |
 | `mailer.py`, `backup.py`, `sikkerhed.py`, `tid.py` | SMTP, backup, kodeord/tokens/login-spærring, tidshjælpere |
 
 ## Vigtige designvalg
@@ -44,11 +45,20 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 - **Forbrugsgrupper** (fra klubmeddelelsen "Sådan afregnes vinterstrøm", nov–mar):
   0–20 kWh 0 kr · 21–100 120 kr · 101–300 400 kr · 301–700 1000 kr · 701–1500 2200 kr · over 1500 4500 kr.
   Månedsforbrug afrundes til hele kWh før placering. Opgøres pr. måler/tildeling (pr. båd), ikke pr. bruger.
-  Kan ændres af havnekontoret (Indstillinger).
+  Kan ændres af systemadministratoren (System → Indstillinger).
+- **Brugerlag (`brugere.rolle`):** `bruger` (medlem) < `kontor` (havnekontor: brugere, tildel/fjern målere,
+  opgørelser) < `admin` (systemadministrator: alt + System-siderne: status, log, måleropsætning, database/backup,
+  indstillinger, debug). Tjek med `er_kontor()`/`er_admin()` og `kontor_kraevet`/`admin_kraevet` i `web.py`.
+  `ADMIN_EMAIL` gøres til admin ved start, hvis der ingen admin findes. Kun admin kan give admin-rollen, og
+  havnekontoret kan ikke ændre en admins konto.
+- **Fjern måler fra bruger** = afslut tildelingen pr. dato (`_fjern_tildeling`); historik bevares. Siden
+  `/kontor/ubrugte` viser tildelte målere uden forbrug i N dage, så de kan fjernes samlet.
+- **Forbrugsrapport på mail:** Min side → `/min-side/rapport` (`rapport.bruger_periode`), tekst + CSV pr. dag,
+  maks 5 pr. bruger pr. time.
 - **Månedslås:** den 1. kl. 00:20 fryses forrige måned i `maanedsopgoerelser`; kan genberegnes manuelt.
 - **Offline:** bygger på HA-state `unavailable` → kræver Zigbee2MQTT `availability: enabled: true`.
 - **Engangsjob/varsler** dedupliceres via tabel `varsler_sendt` (nøgler som `job:dag:2026-11-21`, `adv:...`).
-- **Debug / simuleret forbrug** (`simulering.py`, side `/kontor/debug`): tabel `sim_forbrug` lægges oven i
+- **Debug / simuleret forbrug** (`simulering.py`, side `/system/debug`): tabel `sim_forbrug` lægges oven i
   `aflaesninger` via viewet `alle_delta` – alle forbrugssummer skal læse fra `alle_delta`, mens tællerstande
   (`energi_kwh`) altid læses fra `aflaesninger`. Mens der findes simuleret forbrug, er mails til medlemmer på pause,
   og berørte låste måneder genberegnes ved tilføj/slet.

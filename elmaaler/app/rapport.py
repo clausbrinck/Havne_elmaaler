@@ -4,7 +4,7 @@ import io
 from datetime import timedelta
 
 from . import forbrug
-from .tid import maaned_navn, fmt_dato, maaned_str
+from .tid import maaned_navn, fmt_dato, maaned_str, naeste_maaned
 
 
 def dk(x, dec=1):
@@ -76,6 +76,60 @@ def bruger_maaned(bruger, rows, maaned):
     if any(r["afregnes"] for r in rows):
         linjer += ["", "Det samlede beløb for vinterperioden opkræves ved standerhejsning."]
     return "\n".join(linjer)
+
+
+def bruger_periode(c, bruger, fra_dato, til_dato):
+    """Forbrugsrapport bestilt på Min side for perioden fra_dato..til_dato (begge inkl.).
+    Returnerer (mailtekst, CSV-bytes) – CSV er None hvis brugeren ingen måler havde i perioden."""
+    fra, til = forbrug.dato_ts(fra_dato), forbrug.dato_ts(til_dato + timedelta(days=1))
+    tild = c.execute("SELECT t.*, m.placering FROM tildelinger t JOIN maalere m ON m.id=t.maaler_id "
+                     "WHERE t.bruger_id=? AND t.start_ts<? AND (t.slut_ts IS NULL OR t.slut_ts>?) "
+                     "ORDER BY t.maaler_id, t.start_ts", (bruger["id"], til, fra)).fetchall()
+    if not tild:
+        return "", None
+    buf = io.StringIO()
+    buf.write("﻿")   # BOM så Excel læser æøå korrekt
+    w = csv.writer(buf, delimiter=";")
+    w.writerow(["Dato", "Måler", "Placering", "Båd", "kWh"])
+    linjer = [f"Hej {bruger['navn'] or ''}".strip() + ",", "",
+              f"Her er dit strømforbrug {fmt_dato(fra_dato.isoformat())} – {fmt_dato(til_dato.isoformat())}.", ""]
+    total = 0.0
+    for t in tild:
+        a, b = max(fra, t["start_ts"]), min(til, t["slut_ts"] or til)
+        d0, d1 = forbrug.lokal(a).date(), forbrug.lokal(b).date()
+        serie = forbrug.dagsserie(c, [t["maaler_id"]], d0, d1)
+        kwh = sum(serie.values())
+        total += kwh
+        linjer.append(f"{_maaler_linje(t)}: {dk(kwh)} kWh"
+                      + (f" ({fmt_dato(d0.isoformat())} – {fmt_dato((d1 - timedelta(days=1)).isoformat())})"
+                         if (a, b) != (fra, til) else ""))
+        # forbrugsgruppe for hver måned perioden rører (hele måneden på tildelingen)
+        m = maaned_str(d0)
+        while m <= maaned_str(d1 - timedelta(days=1)):
+            laast = c.execute("SELECT kwh, gruppe, pris FROM maanedsopgoerelser WHERE maaned=? AND maaler_id=? "
+                              "AND bruger_id=? AND fra_dato>=? ORDER BY fra_dato LIMIT 1",
+                              (m, t["maaler_id"], bruger["id"], t["start_dato"])).fetchone()
+            if laast:
+                k = forbrug.kategoriser(laast["kwh"], m)
+                mk, pris, note = laast["kwh"], laast["pris"], ""
+            else:
+                k = forbrug.bruger_maaned_status(c, t, m)
+                mk, pris, note = k["kwh"], k["pris"], " (foreløbig)"
+            linjer.append(f"   {maaned_navn(m).capitalize()}: {dk(mk)} kWh – gruppe {k['label']}"
+                          + (f", {dk(pris, 0)} kr" if k["afregnes"] and pris is not None else ", ikke afregnet")
+                          + note)
+            m = naeste_maaned(m)
+        if len(serie) <= 62:
+            for d, v in serie.items():
+                linjer.append(f"      {['man','tir','ons','tor','fre','lør','søn'][d.weekday()]} {d:%d-%m}: {dk(v)} kWh")
+        linjer.append("")
+        for d, v in serie.items():
+            w.writerow([d.strftime("%d-%m-%Y"), f"{t['maaler_id']:03d}", t["placering"], t["baad"], dk(v, 3)])
+    if len(tild) > 1:
+        linjer.append(f"I alt: {dk(total)} kWh")
+        linjer.append("")
+    linjer.append("Forbruget pr. dag er også vedhæftet som CSV-fil (kan åbnes i Excel).")
+    return "\n".join(linjer), buf.getvalue().encode("utf-8")
 
 
 # ---------------------------------------------------------------- kontormails

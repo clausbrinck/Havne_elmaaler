@@ -15,6 +15,7 @@
     <li>En bruger med flere både står på én linje pr. måler – <code>baad</code> er båden på netop den måler.</li>
     <li>Er måleren allerede tildelt en anden, afsluttes den tildeling pr. <code>start_dato</code> (standard: i dag).</li>
     <li>Rækker uden email opdaterer kun placeringen.</li>
+    <li><code>placering</code> bruges kun, når en systemadministrator importerer (måleropsætning).</li>
   </ul>
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf" value="{{ csrf() }}">

@@ -27,7 +27,7 @@ def _kontor_modtagere(felt):
     """Emails for havnekontor-brugere med valget slået til + ekstra modtagere."""
     with db.db() as c:
         ud = [r["email"] for r in c.execute(
-            f"SELECT email FROM brugere WHERE rolle='kontor' AND aktiv=1 AND {felt}=1").fetchall()]
+            f"SELECT email FROM brugere WHERE rolle IN ('kontor','admin') AND aktiv=1 AND {felt}=1").fetchall()]
     if db.hent("ekstra_" + felt):
         ud += [e.strip() for e in (db.hent("ekstra_kontor_emails") or "").replace(";", ",").split(",") if e.strip()]
     return sorted(set(ud))

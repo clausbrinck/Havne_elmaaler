@@ -45,6 +45,30 @@
 {% endfor %}
 </div>
 
+{% if kort or historik %}
+<div class="kort">
+  <h2>Forbrugsrapport på mail</h2>
+  <form method="post" action="{{ url_for('min_rapport') }}" class="linje">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <div><label>Periode</label>
+      <select name="periode" style="width:auto"
+              onchange="document.getElementById('egen-periode').style.display = this.value == 'egen' ? 'flex' : 'none'">
+        <option value="denne">Denne måned ({{ maaned | maaned_navn }})</option>
+        <option value="forrige">Sidste måned</option>
+        <option value="vinter">Vintersæsonen (1. nov – 31. mar)</option>
+        <option value="egen">Vælg selv…</option>
+      </select></div>
+    <div id="egen-periode" class="linje" style="display:none">
+      <div><label>Fra</label><input type="date" name="fra" value="{{ maaned_start }}" max="{{ i_dag }}"></div>
+      <div><label>Til og med</label><input type="date" name="til" value="{{ i_dag }}" max="{{ i_dag }}"></div>
+    </div>
+    <button {{ 'disabled' if not smtp }}>Send rapport til min email</button>
+  </form>
+  <p class="muted">{% if smtp %}Rapporten sendes til {{ bruger.email }} med forbrug pr. måler/båd, forbrugsgruppe pr. måned
+    og forbruget pr. dag – også som CSV-fil, der kan åbnes i Excel.{% else %}Mailafsendelse er ikke sat op – kontakt havnekontoret.{% endif %}</p>
+</div>
+{% endif %}
+
 <div class="gitter2">
   <div class="kort">
     <h2>Emails</h2>

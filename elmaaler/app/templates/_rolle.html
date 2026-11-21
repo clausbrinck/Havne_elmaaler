@@ -1,0 +1,8 @@
+{# Rolle-badge og rolle-vælger #}
+{% macro badge(rolle) %}{% if rolle == 'admin' %}<span class="badge admin">systemadmin</span>{% elif rolle == 'kontor' %}<span class="badge kontor">havnekontor</span>{% endif %}{% endmacro %}
+
+{% macro vaelger(valgt='bruger', admin=false) %}<select name="rolle">
+  <option value="bruger" {{ 'selected' if valgt == 'bruger' }}>Bruger (medlem)</option>
+  <option value="kontor" {{ 'selected' if valgt == 'kontor' }}>Havnekontor</option>
+  {% if admin %}<option value="admin" {{ 'selected' if valgt == 'admin' }}>Systemadministrator</option>{% endif %}
+</select>{% endmacro %}

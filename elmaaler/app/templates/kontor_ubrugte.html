@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}Målere der ikke er i brug{% endblock %}
+{% block indhold %}
+<p><a href="{{ url_for('kontor_brugere') }}">← Brugere</a></p>
+<h1>Tildelte målere der ikke er i brug</h1>
+
+<div class="kort">
+  <form method="get" class="linje">
+    <div><label>Intet forbrug de sidste … dage</label><input type="number" name="dage" min="1" max="730" value="{{ dage }}" style="width:110px"></div>
+    <div><label>Under … kWh i perioden</label><input type="number" name="kwh" min="0" step="0.1" value="{{ kwh }}" style="width:110px"></div>
+    <button class="sek">Vis</button>
+  </form>
+  <p class="muted">Viser målere, der er tildelt en bruger, men har brugt under {{ kwh | dk(1) }} kWh de sidste {{ dage }} dage
+    (tildelinger yngre end perioden er ikke med). Når en måler fjernes fra en bruger, afsluttes tildelingen pr. den valgte dato –
+    brugerens historik og opgørelser bevares, og måleren bliver ledig.</p>
+</div>
+
+<div class="kort">
+  <form method="post" data-bekraeft="Fjern de valgte målere fra brugerne?">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input type="hidden" name="dage" value="{{ dage }}"><input type="hidden" name="kwh" value="{{ kwh }}">
+    <div class="maaler-hoved"><h2>{{ rows | length }} måler(e)</h2>
+      {% if rows %}<label class="check"><input type="checkbox"
+        onchange="document.querySelectorAll('input[name=tildeling_id]').forEach(function (c) { c.checked = this.checked }, this)">
+        <span>Vælg alle</span></label>{% endif %}</div>
+    <div class="tabel-wrap"><table>
+      <thead><tr><th></th><th>Måler</th><th>Placering</th><th>Bruger</th><th>Båd</th><th class="skjul-mobil">Tildelt fra</th>
+        <th class="n">kWh {{ dage }} dage</th><th>Sidste forbrug</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr><td><input type="checkbox" name="tildeling_id" value="{{ r.t.id }}"></td>
+          <td><a href="{{ url_for('kontor_maaler', nr=r.t.maaler_id) }}"><strong>{{ '%03d' % r.t.maaler_id }}</strong></a></td>
+          <td>{{ r.t.placering }}</td>
+          <td><a href="{{ url_for('kontor_bruger', bid=r.t.bruger_id) }}">{{ r.t.navn or r.t.email }}</a>
+            {% if not r.andre %}<br><span class="muted">ingen andre målere</span>{% endif %}</td>
+          <td>{{ r.t.baad }}</td>
+          <td class="skjul-mobil">{{ r.t.start_dato | dato }}</td>
+          <td class="n">{{ r.kwh | dk(1) }}</td>
+          <td>{{ r.sidst_forbrug | siden }}</td>
+          <td>{{ gr.status('online' if r.st.tilgaengelig else ('offline' if r.st.sidst_set else 'ukendt')) }}</td></tr>
+      {% else %}<tr><td colspan="9" class="muted">Alle tildelte målere er i brug.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+    {% if rows %}
+    <div class="linje" style="margin-top:12px;display:flex;gap:10px;align-items:flex-end">
+      <div><label>Fjern pr. dato</label><input type="date" name="slut_dato" value="{{ i_dag }}" required></div>
+      <button>Fjern valgte målere fra brugerne</button>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

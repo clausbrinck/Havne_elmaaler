@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block titel %}System – database{% endblock %}
+{% block indhold %}
+<h1>Systemadministration</h1>
+{% include "_system_nav.html" %}
+
+<div class="gitter2">
+<div class="kort">
+  <h2>Database</h2>
+  <p class="muted"><code>{{ info.sti }}</code> · SQLite {{ info.sqlite }}</p>
+  <div class="gitter">
+    <div class="tal"><div class="v">{{ (info.db_kb / 1024) | dk(1) }} <small>MB</small></div><div class="l">Databasefil (+ {{ info.wal_kb }} kB WAL)</div></div>
+    <div class="tal"><div class="v">{{ info.antal.aflaesninger | dk(0) }}</div><div class="l">Aflæsninger</div></div>
+  </div>
+  <p class="muted">Aflæsninger fra {{ info.foerste | tid }} til {{ info.seneste | tid }}.</p>
+  <table><thead><tr><th>Tabel</th><th class="n">Rækker</th></tr></thead><tbody>
+    {% for t, n in info.antal.items() %}<tr><td><code>{{ t }}</code></td><td class="n">{{ n | dk(0) }}</td></tr>{% endfor %}
+  </tbody></table>
+  <form method="post" class="linje" style="margin-top:12px">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <button class="sek" name="handling" value="integritet">Tjek integritet</button>
+    <button class="sek" name="handling" value="optimer">Optimér (VACUUM)</button>
+  </form>
+  <p class="muted">Optimering frigør plads og opdaterer statistik. Kan tage op til et minut på en stor database –
+    opsamlingen venter imens.</p>
+</div>
+
+<div class="kort">
+  <h2>Backup</h2>
+  <p class="muted">Automatisk hver nat kl. {{ config.BACKUP_TIME }}, gemmes {{ config.BACKUP_KEEP_DAYS }} dage i <code>{{ config.BACKUP_DIR }}</code>{% if config.BACKUP_EXTRA_DIR %} og kopieres til <code>{{ config.BACKUP_EXTRA_DIR }}</code>{% endif %}.</p>
+  <form method="post"><input type="hidden" name="csrf" value="{{ csrf() }}"><button class="sek" name="handling" value="backup">Lav backup nu</button></form>
+  <div style="max-height:300px;overflow-y:auto;margin-top:10px"><table><tbody>
+    {% for b in backups %}<tr><td><a href="{{ url_for('system_backup_hent', navn=b.navn) }}">{{ b.navn }}</a></td><td class="n">{{ b.kb }} kB</td></tr>
+    {% else %}<tr><td class="muted">Ingen backups endnu.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <p class="muted">Gendannelse: stop stacken, pak backup-filen ud (<code>gunzip</code>) og læg den som
+    <code>elmaaler.db</code> i datamappen (slet <code>elmaaler.db-wal</code> og <code>-shm</code>), start igen.</p>
+</div>
+</div>
+
+<div class="kort">
+  <h2>Nulstil fejlmålt forbrug</h2>
+  <p class="muted">Hvis en måler har registreret forkert forbrug (fx et spring ved udskiftning), kan forbruget i en periode sættes
+    til 0. Tællerstande bevares, der tages automatisk backup først, handlingen logges, og låste måneder genberegnes.
+    Vis altid forbruget først.</p>
+  {% set f = resultat.form if resultat else {} %}
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <div class="felter">
+      <div class="felt"><label>Måler nr.</label><input type="number" name="maaler" min="1" max="{{ config.METER_COUNT }}" value="{{ f.maaler }}" required></div>
+      <div class="felt"><label>Fra dato</label><input type="date" name="fra" value="{{ f.fra or i_dag }}" max="{{ i_dag }}" required></div>
+      <div class="felt"><label>Fra kl. (time, valgfri)</label><input type="number" name="fra_time" min="0" max="23" value="{{ f.fra_time }}" placeholder="00"></div>
+      <div class="felt"><label>Til dato (inkl.)</label><input type="date" name="til" value="{{ f.til or i_dag }}" max="{{ i_dag }}" required></div>
+      <div class="felt"><label>Til kl. (time, valgfri)</label><input type="number" name="til_time" min="0" max="23" value="{{ f.til_time }}" placeholder="døgnets slut"></div>
+    </div>
+    <button class="sek" name="handling" value="vis_forbrug" formnovalidate>Vis forbrug i perioden</button>
+    {% if resultat %}
+      <div class="flash {{ 'fejl' if resultat.n else 'ok' }}" style="margin-top:12px">
+        Måler {{ '%03d' % resultat.nr }}: <strong>{{ resultat.kwh | dk(2) }} kWh</strong> fordelt på {{ resultat.n }} aflæsninger i perioden.</div>
+      {% if resultat.aflaes %}
+      <table style="max-width:520px"><thead><tr><th>Største aflæsninger</th><th class="n">Δ kWh</th><th class="n">Tæller kWh</th></tr></thead><tbody>
+        {% for a in resultat.aflaes %}<tr><td>{{ a.ts | tid }}</td><td class="n">{{ a.delta_kwh | dk(3) }}</td><td class="n">{{ a.energi_kwh | dk(2) }}</td></tr>{% endfor %}
+      </tbody></table>
+      <div class="felter" style="margin-top:12px">
+        <div class="felt"><label>Årsag (skrives i loggen)</label><input type="text" name="aarsag" placeholder="fx måler udskiftet, fejlaflæsning"></div>
+        <div class="felt"><label>Skriv JA for at bekræfte</label><input type="text" name="bekraeft" autocomplete="off"></div>
+      </div>
+      <button class="fare" name="handling" value="nulstil_forbrug">Nulstil forbruget i perioden</button>
+      {% endif %}
+    {% endif %}
+  </form>
+</div>
+
+<div class="kort">
+  <h2>Konfiguration (fra .env)</h2>
+  <p class="muted">Ændres i <code>.env</code> (Dockge: .env-feltet) – genstart derefter stacken.</p>
+  <table><tbody>
+    <tr><td>Datakilde</td><td><code>SOURCE={{ config.SOURCE }}</code>{% if config.SOURCE != 'sim' %} · <code>{{ config.HA_URL }}</code>{% endif %}</td></tr>
+    <tr><td>Antal målere</td><td><code>METER_COUNT={{ config.METER_COUNT }}</code></td></tr>
+    <tr><td>Hentning / aflæsning</td><td>hvert {{ config.POLL_SECONDS }}. sekund / hvert {{ config.STORE_MINUTES }}. minut</td></tr>
+    <tr><td>Entiteter</td><td><code>{{ config.HA_ENERGY_ENTITY }}</code>, <code>{{ config.HA_POWER_ENTITY }}</code>, <code>{{ config.HA_LQI_ENTITY }}</code></td></tr>
+    <tr><td>Adresse i mails</td><td><code>{{ config.BASE_URL }}</code></td></tr>
+    <tr><td>Datamappe</td><td><code>{{ config.DATA_DIR }}</code></td></tr>
+    <tr><td>Mailserver</td><td>{% if config.SMTP_HOST %}<code>{{ config.SMTP_HOST }}:{{ config.SMTP_PORT }}</code> ({{ config.SMTP_SECURITY }}){% else %}<span class="badge offline">ikke sat op</span>{% endif %}</td></tr>
+    <tr><td>Systemadministrator</td><td><code>ADMIN_EMAIL={{ config.ADMIN_EMAIL }}</code></td></tr>
+  </tbody></table>
+</div>
+{% endblock %}

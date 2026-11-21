@@ -10,7 +10,7 @@ from functools import wraps
 from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
                    send_from_directory, session, url_for)
 
-from . import backup, collector, config, db, forbrug, mailer, rapport, sikkerhed, simulering
+from . import backup, collector, config, db, forbrug, mailer, rapport, sikkerhed, simulering, vedligehold
 from .tid import (nu, i_dag, maaned_str, maaned_grænser, maaned_navn, naeste_maaned,
                   parse_dato, dato_ts, fmt_tid, fmt_dato, siden, lokal)
 
@@ -26,6 +26,22 @@ app.config.update(
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
+# Brugerlag: bruger (medlem) < kontor (havnekontoret) < admin (systemadministration).
+# Admin har alle havnekontorets rettigheder + System-siderne.
+ROLLER = {"bruger": "Bruger", "kontor": "Havnekontor", "admin": "Systemadministrator"}
+KONTOR_ROLLER = ("kontor", "admin")
+
+# Forbrugsrapporter på mail fra Min side: maks 5 pr. bruger pr. time
+rapport_begraenser = sikkerhed.Begraenser(maks=5, vindue=3600)
+
+
+def er_kontor(b):
+    return bool(b and b["rolle"] in KONTOR_ROLLER)
+
+
+def er_admin(b):
+    return bool(b and b["rolle"] == "admin")
+
 
 # ---------------------------------------------------------------- filtre og fælles
 
@@ -35,8 +51,9 @@ app.jinja_env.filters.update(dk=rapport.dk, tid=fmt_tid, dato=fmt_dato, siden=si
 @app.context_processor
 def faelles():
     b = g.get("bruger")
-    sim = bool(b and b["rolle"] == "kontor" and simulering.aktiv())
-    return {"klub": config.KLUB_NAVN, "bruger": b, "csrf": csrf_token,
+    sim = bool(er_kontor(b) and simulering.aktiv())
+    return {"klub": config.KLUB_NAVN, "bruger": b, "csrf": csrf_token, "roller": ROLLER,
+            "er_kontor": er_kontor(b), "er_admin": er_admin(b),
             "maaned_navn": maaned_navn, "nu": nu(), "sim_aktiv": sim}
 
 
@@ -84,10 +101,28 @@ def kontor_kraevet(f):
     def w(*a, **kw):
         if not g.bruger:
             return redirect(url_for("login", next=request.path))
-        if g.bruger["rolle"] != "kontor":
+        if not er_kontor(g.bruger):
             abort(403)
         return f(*a, **kw)
     return w
+
+
+def admin_kraevet(f):
+    @wraps(f)
+    def w(*a, **kw):
+        if not g.bruger:
+            return redirect(url_for("login", next=request.path))
+        if not er_admin(g.bruger):
+            abort(403)
+        return f(*a, **kw)
+    return w
+
+
+def _rolle_fra_form():
+    """Rollen fra en formular. Kun admin kan give admin-rollen."""
+    r = request.form.get("rolle", "bruger")
+    tilladt = ("bruger", "kontor", "admin") if er_admin(g.bruger) else ("bruger", "kontor")
+    return r if r in tilladt else "bruger"
 
 
 def _log_ind(b):
@@ -123,7 +158,7 @@ def _send_link(b, formaal):
 def forside():
     if not g.bruger:
         return redirect(url_for("login"))
-    return redirect(url_for("kontor" if g.bruger["rolle"] == "kontor" else "min_side"))
+    return redirect(url_for("kontor" if er_kontor(g.bruger) else "min_side"))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -215,7 +250,9 @@ def min_side():
         kort = [_maaler_kort(c, t, maaned) for t in tild]
     return render_template("min_side.html", kort=kort, maaned=maaned,
                            historik=forbrug.bruger_historik(g.bruger["id"]),
-                           kategorier=forbrug.kategorier(), afregnes=forbrug.afregnes(maaned))
+                           kategorier=forbrug.kategorier(), afregnes=forbrug.afregnes(maaned),
+                           i_dag=i_dag().isoformat(), maaned_start=i_dag().replace(day=1).isoformat(),
+                           smtp=mailer.konfigureret())
 
 
 @app.route("/min-side/emails", methods=["POST"])
@@ -226,12 +263,74 @@ def mine_emails():
         c.execute(f"UPDATE brugere SET {', '.join(f + '=?' for f in felter)} WHERE id=?",
                   (*[1 if request.form.get(f) else 0 for f in felter], g.bruger["id"]))
     flash("Dine email-valg er gemt.", "ok")
-    return redirect(request.form.get("tilbage") or url_for("min_side"))
+    return redirect(url_for("min_side"))
+
+
+def _rapport_periode(valg, fra_txt, til_txt):
+    """Periode (fra, til – begge inkl.) til forbrugsrapporten ud fra valget på Min side."""
+    idag = i_dag()
+    if valg == "denne":
+        return idag.replace(day=1), idag
+    if valg == "forrige":
+        slut = idag.replace(day=1) - timedelta(days=1)
+        return slut.replace(day=1), slut
+    if valg == "vinter":
+        aar = idag.year if idag.month >= 11 else idag.year - 1
+        start = idag.replace(year=aar, month=11, day=1)
+        return start, min(idag, start.replace(year=aar + 1, month=3, day=31))
+    fra, til = parse_dato(fra_txt), parse_dato(til_txt)
+    if til < fra:
+        raise ValueError("Til-datoen skal være samme dag som eller efter fra-datoen.")
+    if til > idag:
+        til = idag
+    if (til - fra).days > 400:
+        raise ValueError("Perioden må højst være 400 dage.")
+    return fra, til
+
+
+@app.route("/min-side/rapport", methods=["POST"])
+@login_kraevet
+def min_rapport():
+    """Send en forbrugsrapport for en valgt periode til brugerens egen email."""
+    b = g.bruger
+    try:
+        fra, til = _rapport_periode(request.form.get("periode", "denne"),
+                                    request.form.get("fra", ""), request.form.get("til", ""))
+    except (ValueError, KeyError) as e:
+        flash(str(e) or "Ugyldig periode.", "fejl")
+        return redirect(url_for("min_side"))
+    if not mailer.konfigureret():
+        flash("Der er ikke sat en mailserver op – kontakt havnekontoret.", "fejl")
+        return redirect(url_for("min_side"))
+    if rapport_begraenser.blokeret(b["id"]):
+        flash("Du har bestilt mange rapporter den seneste time. Prøv igen lidt senere.", "fejl")
+        return redirect(url_for("min_side"))
+    rapport_begraenser.fejl(b["id"])
+    with db.db() as c:
+        tekst, data = rapport.bruger_periode(c, b, fra, til)
+    if data is None:
+        flash("Du har ingen måler i den valgte periode.", "fejl")
+        return redirect(url_for("min_side"))
+    ok = mailer.send(b["email"], f"Forbrugsrapport {fmt_dato(fra)} – {fmt_dato(til)}", tekst,
+                     vedhaeft=[(f"elforbrug-{fra}-{til}.csv", data, "text/csv")])
+    if ok:
+        db.log("mail", f"Forbrugsrapport {fra} – {til} sendt til {b['email']} (bestilt på Min side)")
+        flash(f"Rapporten for {fmt_dato(fra)} – {fmt_dato(til)} er sendt til {b['email']}.", "ok")
+    else:
+        flash("Rapporten kunne ikke sendes. Prøv igen senere, eller kontakt havnekontoret.", "fejl")
+    return redirect(url_for("min_side"))
 
 
 @app.route("/min-side/konto", methods=["GET", "POST"])
 @login_kraevet
 def min_konto():
+    if request.method == "POST" and request.form.get("handling") == "kontor_mails" and er_kontor(g.bruger):
+        felter = ["mail_offline", "mail_dag", "mail_uge", "mail_maaned"]
+        with db.db() as c:
+            c.execute(f"UPDATE brugere SET {', '.join(f + '=?' for f in felter)} WHERE id=?",
+                      (*[1 if request.form.get(f) else 0 for f in felter], g.bruger["id"]))
+        flash("Dine havnekontor-mails er gemt.", "ok")
+        return redirect(url_for("min_konto"))
     if request.method == "POST":
         b = g.bruger
         if not sikkerhed.tjek_kode(request.form.get("nuvaerende", ""), b["pw_hash"]):
@@ -246,12 +345,14 @@ def min_konto():
                 try:
                     with db.db() as c:
                         c.execute("UPDATE brugere SET email=? WHERE id=?", (ny, b["id"]))
-                    mailer.send(  # efter commitb["email"], "Din email er ændret",
+                except Exception:  # noqa: BLE001
+                    flash("Den email bruges allerede af en anden bruger.", "fejl")
+                else:
+                    # mail til den gamle adresse – sendes efter commit
+                    mailer.send(b["email"], "Din email er ændret",
                                 f"Din email til elmålerne er ændret fra {b['email']} til {ny}.\n"
                                 "Har du ikke selv gjort det, så kontakt havnekontoret.")
                     flash("Din email er ændret.", "ok")
-                except Exception:  # noqa: BLE001
-                    flash("Den email bruges allerede af en anden bruger.", "fejl")
         elif handling == "kode":
             k1, k2 = request.form.get("kode", ""), request.form.get("kode2", "")
             fejl = sikkerhed.kode_ok(k1) or (k1 != k2 and "De to adgangskoder er ikke ens.")
@@ -271,7 +372,7 @@ def min_konto():
 @login_kraevet
 def api_live():
     with db.db() as c:
-        if g.bruger["rolle"] == "kontor" and request.args.get("alle"):
+        if er_kontor(g.bruger) and request.args.get("alle"):
             rows = c.execute("SELECT s.* FROM status s JOIN maalere m ON m.id=s.maaler_id WHERE m.aktiv=1").fetchall()
         else:
             ids = [t["maaler_id"] for t in forbrug.aktive_tildelinger(c, bruger_id=g.bruger["id"])]
@@ -351,6 +452,22 @@ def _tildel(c, maaler_id, bruger_id, start, baad=""):
               (maaler_id, bruger_id, start.isoformat(), s_ts, nu(), (baad or "").strip()))
 
 
+def _fjern_tildeling(c, tildeling_id, slut, maaler_id=None, bruger_id=None):
+    """Fjern måler fra bruger pr. dato (tildelingen afsluttes – historik og opgørelser bevares)."""
+    t = c.execute("SELECT t.*, b.navn, b.email FROM tildelinger t JOIN brugere b ON b.id=t.bruger_id WHERE t.id=?",
+                  (tildeling_id,)).fetchone()
+    if not t or (maaler_id and t["maaler_id"] != maaler_id) or (bruger_id and t["bruger_id"] != bruger_id):
+        raise ValueError("Tildelingen findes ikke.")
+    if t["slut_ts"] is not None and t["slut_ts"] <= nu():
+        raise ValueError(f"Måler {t['maaler_id']:03d} er allerede fjernet fra brugeren.")
+    if dato_ts(slut) <= t["start_ts"]:
+        raise ValueError(f"Datoen skal være efter tildelingens start ({fmt_dato(t['start_dato'])}).")
+    c.execute("UPDATE tildelinger SET slut_dato=?, slut_ts=? WHERE id=?", (slut.isoformat(), dato_ts(slut), t["id"]))
+    db.log("tildeling", f"Måler {t['maaler_id']:03d} fjernet fra {t['email']}"
+                        + (f" ({t['baad']})" if t["baad"] else "") + f" pr. {slut} (af {g.bruger['email']})", c)
+    return t
+
+
 @app.route("/kontor/maaler/<int:nr>", methods=["GET", "POST"])
 @kontor_kraevet
 def kontor_maaler(nr):
@@ -361,6 +478,8 @@ def kontor_maaler(nr):
     if request.method == "POST":
         h = request.form.get("handling")
         try:
+            if h in ("gem", "slet_tildeling") and not er_admin(g.bruger):
+                abort(403)   # måleropsætning og sletning er systemadministration
             with db.db() as c:
                 if h == "gem":
                     c.execute("UPDATE maalere SET placering=?, aktiv=?, note=? WHERE id=?",
@@ -378,15 +497,9 @@ def kontor_maaler(nr):
                                         f"(af {g.bruger['email']})", c)
                     flash(f"Måler {nr:03d} er tildelt {b['navn'] or b['email']}.", "ok")
                 elif h == "afslut":
-                    tid_ = int(request.form["tildeling_id"])
                     slut = parse_dato(request.form["slut_dato"])
-                    t = c.execute("SELECT * FROM tildelinger WHERE id=? AND maaler_id=?", (tid_, nr)).fetchone()
-                    if not t or dato_ts(slut) <= t["start_ts"]:
-                        raise ValueError("Slutdato skal være efter startdato.")
-                    c.execute("UPDATE tildelinger SET slut_dato=?, slut_ts=? WHERE id=?",
-                              (slut.isoformat(), dato_ts(slut), tid_))
-                    db.log("tildeling", f"Tildeling af måler {nr:03d} afsluttet pr. {slut} (af {g.bruger['email']})", c)
-                    flash("Tildelingen er afsluttet.", "ok")
+                    t = _fjern_tildeling(c, int(request.form["tildeling_id"]), slut, maaler_id=nr)
+                    flash(f"Måler {nr:03d} er fjernet fra {t['navn'] or t['email']} pr. {fmt_dato(slut)}.", "ok")
                 elif h == "ret_baad":
                     c.execute("UPDATE tildelinger SET baad=? WHERE id=? AND maaler_id=?",
                               (request.form.get("baad", "").strip(), int(request.form["tildeling_id"]), nr))
@@ -424,7 +537,7 @@ def kontor_brugere():
                 if c.execute("SELECT 1 FROM brugere WHERE email=?", (email,)).fetchone():
                     raise ValueError("Der findes allerede en bruger med den email.")
                 b, _ = _find_eller_opret_bruger(c, email, request.form.get("navn", ""))
-                rolle = "kontor" if request.form.get("rolle") == "kontor" else "bruger"
+                rolle = _rolle_fra_form()
                 c.execute("UPDATE brugere SET telefon=?, rolle=? WHERE id=?",
                           (request.form.get("telefon", "").strip(), rolle, b["id"]))
                 kode = request.form.get("kode", "")
@@ -455,7 +568,8 @@ def kontor_brugere():
             "  WHERE t.bruger_id=b.id AND t.start_ts<=?1 AND (t.slut_ts IS NULL OR t.slut_ts>?1)) maalere, "
             "(SELECT GROUP_CONCAT(NULLIF(t.baad, ''), ', ') FROM tildelinger t "
             "  WHERE t.bruger_id=b.id AND t.start_ts<=?1 AND (t.slut_ts IS NULL OR t.slut_ts>?1)) baade "
-            "FROM brugere b ORDER BY b.rolle DESC, b.navn COLLATE NOCASE, b.email", (nu(),)).fetchall()
+            "FROM brugere b ORDER BY CASE b.rolle WHEN 'admin' THEN 0 WHEN 'kontor' THEN 1 ELSE 2 END, "
+            "b.navn COLLATE NOCASE, b.email", (nu(),)).fetchall()
     return render_template("kontor_brugere.html", brugere=brugere, i_dag=i_dag().isoformat())
 
 
@@ -468,16 +582,18 @@ def kontor_bruger(bid):
         abort(404)
     if request.method == "POST":
         h = request.form.get("handling")
+        if er_admin(b) and not er_admin(g.bruger) and h not in ("tildel", "afslut", "ret_baad"):
+            abort(403)   # havnekontoret kan ikke ændre en systemadministrators konto
         try:
             with db.db() as c:
                 if h == "gem":
                     email = request.form.get("email", "").strip().lower()
                     if not EMAIL_RE.match(email):
                         raise ValueError("Ugyldig email.")
-                    rolle = "kontor" if request.form.get("rolle") == "kontor" else "bruger"
+                    rolle = _rolle_fra_form()
                     aktiv = 1 if request.form.get("aktiv") else 0
-                    if bid == g.bruger["id"] and (rolle != "kontor" or not aktiv):
-                        raise ValueError("Du kan ikke fjerne din egen kontor-adgang.")
+                    if bid == g.bruger["id"] and (rolle != g.bruger["rolle"] or not aktiv):
+                        raise ValueError("Du kan ikke ændre din egen rolle eller gøre dig selv inaktiv.")
                     c.execute("UPDATE brugere SET email=?, navn=?, telefon=?, rolle=?, aktiv=? WHERE id=?",
                               (email, request.form.get("navn", "").strip(),
                                request.form.get("telefon", "").strip(), rolle, aktiv, bid))
@@ -492,6 +608,10 @@ def kontor_bruger(bid):
                     _tildel(c, int(request.form["maaler"]), bid, parse_dato(request.form["start_dato"]),
                             request.form.get("baad", ""))
                     flash("Måler tildelt.", "ok")
+                elif h == "afslut":
+                    slut = parse_dato(request.form["slut_dato"])
+                    t = _fjern_tildeling(c, int(request.form["tildeling_id"]), slut, bruger_id=bid)
+                    flash(f"Måler {t['maaler_id']:03d} er fjernet fra brugeren pr. {fmt_dato(slut)}.", "ok")
                 elif h == "ret_baad":
                     c.execute("UPDATE tildelinger SET baad=? WHERE id=? AND bruger_id=?",
                               (request.form.get("baad", "").strip(), int(request.form["tildeling_id"]), bid))
@@ -511,6 +631,49 @@ def kontor_bruger(bid):
         status = {t["maaler_id"]: forbrug.bruger_maaned_status(c, t, maaned) for t in aktive}
     return render_template("kontor_bruger.html", b=b, tild=tild, status=status, maaned=maaned,
                            historik=forbrug.bruger_historik(bid), i_dag=i_dag().isoformat())
+
+
+@app.route("/kontor/ubrugte", methods=["GET", "POST"])
+@kontor_kraevet
+def kontor_ubrugte():
+    """Tildelte målere uden forbrug i en periode – kan fjernes fra brugerne samlet."""
+    if request.method == "POST":
+        ids = [int(x) for x in request.form.getlist("tildeling_id")]
+        if not ids:
+            flash("Sæt flueben ved de målere, der skal fjernes.", "fejl")
+        else:
+            try:
+                slut = parse_dato(request.form["slut_dato"])
+                with db.db() as c:   # alt eller intet: fejler én, fjernes ingen
+                    for tid_ in ids:
+                        _fjern_tildeling(c, tid_, slut)
+                flash(f"{len(ids)} måler(e) er fjernet fra brugerne pr. {fmt_dato(slut)}. "
+                      "Historik og opgørelser er bevaret.", "ok")
+            except (ValueError, KeyError) as e:
+                flash((str(e) or "Ugyldige data.") + " Ingen målere blev fjernet.", "fejl")
+        return redirect(url_for("kontor_ubrugte", dage=request.form.get("dage", 30), kwh=request.form.get("kwh", 1)))
+
+    try:
+        dage = min(max(int(request.args.get("dage") or 30), 1), 730)
+        graense = max(float((request.args.get("kwh") or "1").replace(",", ".")), 0)
+    except ValueError:
+        dage, graense = 30, 1.0
+    fra = nu() - dage * 86400
+    rows = []
+    with db.db() as c:
+        for t in forbrug.aktive_tildelinger(c):
+            if t["start_ts"] > fra:
+                continue   # tildelt for nylig – giv den en chance
+            kwh = forbrug.forbrug(c, t["maaler_id"], fra, nu() + 1)
+            if kwh >= graense:
+                continue
+            sidst = c.execute("SELECT MAX(ts) FROM alle_delta WHERE maaler_id=? AND delta_kwh>0.01",
+                              (t["maaler_id"],)).fetchone()[0]
+            st = c.execute("SELECT * FROM status WHERE maaler_id=?", (t["maaler_id"],)).fetchone()
+            andre = c.execute("SELECT COUNT(*) FROM tildelinger WHERE bruger_id=? AND id<>? AND start_ts<=? "
+                              "AND (slut_ts IS NULL OR slut_ts>?)", (t["bruger_id"], t["id"], nu(), nu())).fetchone()[0]
+            rows.append({"t": t, "kwh": kwh, "sidst_forbrug": sidst, "st": st, "andre": andre})
+    return render_template("kontor_ubrugte.html", rows=rows, dage=dage, kwh=graense, i_dag=i_dag().isoformat())
 
 
 def _maaned_liste():
@@ -585,40 +748,133 @@ def kontor_vinter_csv():
                     headers={"Content-Disposition": f"attachment; filename=vinterstroem-{aar}-{aar + 1}.csv"})
 
 
-@app.route("/kontor/netvaerk")
-@kontor_kraevet
-def kontor_netvaerk():
+# ---------------------------------------------------------------- systemadministration (kun admin)
+
+@app.route("/system")
+@admin_kraevet
+def system_status():
     with db.db() as c:
         maalere = c.execute("SELECT m.id, m.placering, m.aktiv, s.* FROM maalere m JOIN status s ON s.maaler_id=m.id "
                             "ORDER BY s.tilgaengelig, s.linkquality IS NULL, s.linkquality, m.id").fetchall()
         brugere = c.execute("SELECT * FROM brugere ORDER BY sidste_login DESC").fetchall()
-        haend = c.execute("SELECT * FROM haendelser ORDER BY ts DESC LIMIT 150").fetchall()
+        haend = c.execute("SELECT * FROM haendelser ORDER BY ts DESC LIMIT 30").fetchall()
     lqi = [m["linkquality"] for m in maalere if m["linkquality"] is not None and m["tilgaengelig"]]
     login = {
         "i_alt": len(brugere),
         "aktive": sum(1 for b in brugere if b["aktiv"]),
         "kontor": sum(1 for b in brugere if b["rolle"] == "kontor"),
+        "admin": sum(1 for b in brugere if b["rolle"] == "admin"),
         "30_dage": sum(1 for b in brugere if b["sidste_login"] and b["sidste_login"] > nu() - 30 * 86400),
         "aldrig": [b for b in brugere if b["aktiv"] and not b["sidste_login"]],
         "uden_kode": sum(1 for b in brugere if b["aktiv"] and not b["pw_hash"]),
     }
-    return render_template("kontor_netvaerk.html", maalere=maalere, ha=collector.STATUS, haend=haend,
+    return render_template("system_status.html", maalere=maalere, ha=collector.STATUS, haend=haend,
                            login=login, brugere=brugere[:25], config=config,
                            lqi={"min": min(lqi, default=None), "snit": sum(lqi) / len(lqi) if lqi else None,
                                 "svage": sum(1 for x in lqi if x < 40)})
 
 
-@app.route("/kontor/indstillinger", methods=["GET", "POST"])
-@kontor_kraevet
-def kontor_indstillinger():
+@app.route("/system/log")
+@admin_kraevet
+def system_log():
+    type_ = request.args.get("type", "")
+    q = request.args.get("q", "").strip()
+    sql, args = "SELECT * FROM haendelser WHERE 1=1", []
+    if type_:
+        sql += " AND type=?"
+        args.append(type_)
+    if q:
+        sql += " AND tekst LIKE ?"
+        args.append(f"%{q}%")
+    with db.db() as c:
+        haend = c.execute(sql + " ORDER BY ts DESC LIMIT 1000", args).fetchall()
+        typer = [r[0] for r in c.execute("SELECT DISTINCT type FROM haendelser ORDER BY type")]
+    return render_template("system_log.html", haend=haend, typer=typer, type_=type_, q=q)
+
+
+@app.route("/system/maalere", methods=["GET", "POST"])
+@admin_kraevet
+def system_maalere():
+    """Måleropsætning: placering, aktiv og note for alle målere på én side."""
+    if request.method == "POST":
+        aendret = 0
+        with db.db() as c:
+            for m in c.execute("SELECT * FROM maalere").fetchall():
+                if f"placering_{m['id']}" not in request.form:
+                    continue
+                ny = (request.form.get(f"placering_{m['id']}", "").strip().upper(),
+                      1 if request.form.get(f"aktiv_{m['id']}") else 0,
+                      request.form.get(f"note_{m['id']}", "").strip())
+                if ny != (m["placering"], m["aktiv"], m["note"]):
+                    c.execute("UPDATE maalere SET placering=?, aktiv=?, note=? WHERE id=?", (*ny, m["id"]))
+                    aendret += 1
+            if aendret:
+                db.log("system", f"Måleropsætning: {aendret} målere ændret (af {g.bruger['email']})", c)
+        flash(f"{aendret} måler(e) ændret." if aendret else "Ingen ændringer.", "ok")
+        return redirect(url_for("system_maalere"))
+    with db.db() as c:
+        maalere = c.execute("SELECT m.*, s.tilgaengelig, s.sidst_set, s.energi_kwh FROM maalere m "
+                            "JOIN status s ON s.maaler_id=m.id ORDER BY m.id").fetchall()
+        aktive = {t["maaler_id"]: t for t in forbrug.aktive_tildelinger(c)}
+    return render_template("system_maalere.html", maalere=maalere, aktive=aktive, config=config)
+
+
+@app.route("/system/database", methods=["GET", "POST"])
+@admin_kraevet
+def system_database():
+    resultat = None
+    if request.method == "POST":
+        h = request.form.get("handling")
+        try:
+            if h == "backup":
+                f = backup.lav_backup(f"manuel af {g.bruger['email']}")
+                flash(f"Backup lavet: {os.path.basename(f)}", "ok")
+            elif h == "integritet":
+                r = vedligehold.integritet()
+                flash("Integritetstjek: databasen er i orden." if r == ["ok"] else
+                      "Integritetstjek fandt fejl: " + "; ".join(r[:10]), "ok" if r == ["ok"] else "fejl")
+            elif h == "optimer":
+                sparet = vedligehold.optimer(g.bruger["email"])
+                flash(f"Databasen er optimeret ({sparet} kB frigjort).", "ok")
+            elif h in ("vis_forbrug", "nulstil_forbrug"):
+                nr = int(request.form["maaler"])
+                # fra kl. (standard 00) på fra-dato til kl. (standard: døgnets slut) på til-dato
+                fra = dato_ts(parse_dato(request.form["fra"])) + int(request.form.get("fra_time") or 0) * 3600
+                til_d = parse_dato(request.form["til"])
+                til = (dato_ts(til_d) + int(request.form["til_time"]) * 3600 if request.form.get("til_time")
+                       else dato_ts(til_d + timedelta(days=1)))
+                if h == "vis_forbrug":
+                    kwh, n = vedligehold.fejlmaalt_forbrug(nr, fra, til)
+                    resultat = {"form": request.form, "kwh": kwh, "n": n, "nr": nr,
+                                "aflaes": _aflaesninger(nr, fra, til)}
+                else:
+                    if request.form.get("bekraeft") != "JA":
+                        raise ValueError("Skriv JA i bekræft-feltet for at nulstille forbruget.")
+                    kwh, n, laast = vedligehold.nulstil_forbrug(nr, fra, til, request.form.get("aarsag", "").strip(),
+                                                                g.bruger["email"])
+                    flash(f"{rapport.dk(kwh, 2)} kWh i {n} aflæsninger er nulstillet på måler {nr:03d}. Der blev taget "
+                          "backup først." + (f" Låste måneder genberegnet: {', '.join(laast)}." if laast else ""), "ok")
+        except (ValueError, KeyError, RuntimeError) as e:
+            flash(str(e) or "Ugyldige værdier.", "fejl")
+        if resultat is None:
+            return redirect(url_for("system_database"))
+    return render_template("system_database.html", info=vedligehold.info(), backups=backup.liste(), config=config,
+                           resultat=resultat, i_dag=i_dag().isoformat())
+
+
+def _aflaesninger(nr, fra, til):
+    with db.db() as c:
+        return c.execute("SELECT * FROM aflaesninger WHERE maaler_id=? AND ts>? AND ts<=? AND delta_kwh<>0 "
+                         "ORDER BY delta_kwh DESC LIMIT 20", (nr, fra, til)).fetchall()
+
+
+@app.route("/system/indstillinger", methods=["GET", "POST"])
+@admin_kraevet
+def system_indstillinger():
     if request.method == "POST":
         h = request.form.get("handling")
         try:
             if h == "mails":
-                with db.db() as c:
-                    felter = ["mail_offline", "mail_dag", "mail_uge", "mail_maaned"]
-                    c.execute(f"UPDATE brugere SET {', '.join(f + '=?' for f in felter)} WHERE id=?",
-                              (*[1 if request.form.get(f) else 0 for f in felter], g.bruger["id"]))
                 emails = [e.strip() for e in request.form.get("ekstra_kontor_emails", "").replace(";", ",").split(",")
                           if e.strip()]
                 for e in emails:
@@ -630,6 +886,7 @@ def kontor_indstillinger():
                 db.gem("mail_tidspunkt", f"{int(request.form['mail_time']):02d}:{int(request.form['mail_min']):02d}")
                 db.gem("offline_minutter", max(10, int(request.form["offline_minutter"])))
                 db.gem("advarsel_procent", min(99, max(50, int(request.form["advarsel_procent"]))))
+                db.log("indstilling", f"Mail-opsætning ændret af {g.bruger['email']}")
                 flash("Email-opsætning gemt.", "ok")
             elif h == "kategorier":
                 kat = []
@@ -649,30 +906,27 @@ def kontor_indstillinger():
             elif h == "testmail":
                 ok = mailer.send(g.bruger["email"], "Testmail fra elmålerne", "Det virker! Mailopsætningen er i orden.")
                 flash("Testmail sendt til " + g.bruger["email"] if ok else
-                      "Mail kunne ikke sendes – se hændelsesloggen under Netværk.", "ok" if ok else "fejl")
-            elif h == "backup":
-                f = backup.lav_backup(f"manuel af {g.bruger['email']}")
-                flash(f"Backup lavet: {os.path.basename(f)}", "ok")
+                      "Mail kunne ikke sendes – se systemloggen.", "ok" if ok else "fejl")
         except (ValueError, KeyError) as e:
             flash(str(e) or "Ugyldige værdier.", "fejl")
-        return redirect(url_for("kontor_indstillinger"))
+        return redirect(url_for("system_indstillinger"))
     mt = (db.hent("mail_tidspunkt") or "06:00").split(":")
-    return render_template("kontor_indstillinger.html", kat=db.hent("kategorier"), mdr=db.hent("afregningsmaaneder"),
+    return render_template("system_indstillinger.html", kat=db.hent("kategorier"), mdr=db.hent("afregningsmaaneder"),
                            ind={k: db.hent(k) for k in db.STANDARD_INDSTILLINGER}, mail_time=int(mt[0]),
-                           mail_min=int(mt[1]), smtp=mailer.konfigureret(), config=config, backups=backup.liste())
+                           mail_min=int(mt[1]), smtp=mailer.konfigureret(), config=config)
 
 
-@app.route("/kontor/backup/<navn>")
-@kontor_kraevet
-def kontor_backup_hent(navn):
+@app.route("/system/backup/<navn>")
+@admin_kraevet
+def system_backup_hent(navn):
     if not re.fullmatch(r"elmaaler-\d{8}-\d{6}\.db\.gz", navn):
         abort(404)
     return send_from_directory(config.BACKUP_DIR, navn, as_attachment=True)
 
 
-@app.route("/kontor/debug", methods=["GET", "POST"])
-@kontor_kraevet
-def kontor_debug():
+@app.route("/system/debug", methods=["GET", "POST"])
+@admin_kraevet
+def system_debug():
     """Simulér forbrug på udvalgte målere – til test af opgørelser, grupper og grafer."""
     if request.method == "POST":
         h = request.form.get("handling")
@@ -691,9 +945,9 @@ def kontor_debug():
                       + (f" Låste måneder genberegnet: {', '.join(laast)}." if laast else ""), "ok")
         except (ValueError, KeyError) as e:
             flash(str(e) or "Ugyldige værdier.", "fejl")
-        return redirect(url_for("kontor_debug"))
+        return redirect(url_for("system_debug"))
     idag = i_dag()
-    return render_template("kontor_debug.html", sim=simulering.oversigt(), kategorier=forbrug.kategorier(),
+    return render_template("system_debug.html", sim=simulering.oversigt(), kategorier=forbrug.kategorier(),
                            i_dag=idag.isoformat(), maaned_start=idag.replace(day=1).isoformat())
 
 
@@ -719,7 +973,7 @@ def kontor_import():
                 if not 1 <= nr <= config.METER_COUNT:
                     raise ValueError(f"målernummer '{nr}' findes ikke")
                 with db.db() as c:
-                    if r.get("placering"):
+                    if r.get("placering") and er_admin(g.bruger):   # måleropsætning er systemadministration
                         c.execute("UPDATE maalere SET placering=? WHERE id=?", (r["placering"].upper(), nr))
                     if r.get("email"):
                         b, ny = _find_eller_opret_bruger(c, r["email"], r.get("navn", ""))

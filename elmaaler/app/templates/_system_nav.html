@@ -1,0 +1,8 @@
+{% set ep = request.endpoint or '' %}
+<nav class="faner">
+  {% for e, navn in [('system_status', 'Status'), ('system_log', 'Systemlog'), ('system_maalere', 'Måleropsætning'),
+                     ('system_database', 'Database & backup'), ('system_indstillinger', 'Indstillinger'),
+                     ('system_debug', 'Debug')] %}
+    <a href="{{ url_for(e) }}" class="{{ 'aktiv' if ep == e }}">{{ navn }}</a>
+  {% endfor %}
+</nav>

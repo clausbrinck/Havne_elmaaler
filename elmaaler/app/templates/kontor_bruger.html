@@ -1,32 +1,38 @@
 {% extends "base.html" %}
 {% import "_graf.html" as gr %}
+{% import "_rolle.html" as rl %}
 {% block titel %}{{ b.navn or b.email }}{% endblock %}
 {% block indhold %}
 <p><a href="{{ url_for('kontor_brugere') }}">← Brugere</a></p>
-<h1>{{ b.navn or b.email }} {% if b.rolle == 'kontor' %}<span class="badge kontor">havnekontor</span>{% endif %}</h1>
+<h1>{{ b.navn or b.email }} {{ rl.badge(b.rolle) }}</h1>
+{% set laast = b.rolle == 'admin' and not er_admin %}
 
 <div class="gitter2">
 <div class="kort">
   <h2>Oplysninger</h2>
+  {% if laast %}
+  <p>{{ b.email }}{% if b.telefon %} · {{ b.telefon }}{% endif %}</p>
+  <p class="muted">Dette er en systemadministrator. Kontoen kan kun ændres af en systemadministrator.</p>
+  {% else %}
   <form method="post">
     <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="gem">
     <div class="felter">
       <div class="felt"><label>Email</label><input type="email" name="email" value="{{ b.email }}" required></div>
       <div class="felt"><label>Navn</label><input type="text" name="navn" value="{{ b.navn }}"></div>
       <div class="felt"><label>Telefon</label><input type="text" name="telefon" value="{{ b.telefon }}"></div>
-      <div class="felt"><label>Rolle</label><select name="rolle">
-        <option value="bruger" {{ 'selected' if b.rolle == 'bruger' }}>Bruger</option>
-        <option value="kontor" {{ 'selected' if b.rolle == 'kontor' }}>Havnekontor</option></select></div>
+      <div class="felt"><label>Rolle</label>{{ rl.vaelger(b.rolle, er_admin) }}</div>
     </div>
     <label class="check"><input type="checkbox" name="aktiv" {{ 'checked' if b.aktiv }}> <span>Aktiv (kan logge ind og få mails)</span></label>
     <button>Gem</button>
   </form>
+  {% endif %}
   <p class="muted">Oprettet {{ b.oprettet | tid }} · sidste login {{ b.sidste_login | siden }} ·
     emails: {% for f, n in [('mail_advarsel','advarsel'),('mail_dag','døgn'),('mail_uge','uge'),('mail_maaned','måned'),('mail_offline','offline')] %}{% if b[f] %}{{ n }} {% endif %}{% endfor %}</p>
 </div>
 
 <div class="kort">
   <h2>Adgang</h2>
+  {% if laast %}<p class="muted">Kan kun ændres af en systemadministrator.</p>{% else %}
   <form method="post" class="linje" style="margin-bottom:10px">
     <input type="hidden" name="csrf" value="{{ csrf() }}">
     <button name="handling" value="invitation" class="sek">Send invitation</button>
@@ -38,13 +44,14 @@
     <button>Sæt kode</button>
   </form>
   <p class="muted">{{ 'Brugeren har en adgangskode.' if b.pw_hash else 'Brugeren har endnu ikke valgt adgangskode.' }}</p>
+  {% endif %}
 </div>
 </div>
 
 <div class="kort">
   <h2>Målere</h2>
   <table>
-    <thead><tr><th>Måler</th><th>Placering</th><th>Båd</th><th>Fra</th><th>Ophørt pr.</th><th class="n">kWh {{ maaned | maaned_navn }}</th><th>Gruppe</th></tr></thead>
+    <thead><tr><th>Måler</th><th>Placering</th><th>Båd</th><th>Fra</th><th>Fjernet pr.</th><th class="n">kWh {{ maaned | maaned_navn }}</th><th>Gruppe</th></tr></thead>
     <tbody>
     {% for t in tild %}
       {% set s = status.get(t.maaler_id) if not t.slut_dato else none %}
@@ -53,7 +60,13 @@
             <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="ret_baad">
             <input type="hidden" name="tildeling_id" value="{{ t.id }}">
             <input type="text" name="baad" value="{{ t.baad }}" style="width:140px"><button class="sek lille">Gem</button></form></td>
-        <td>{{ t.start_dato | dato }}</td><td>{{ t.slut_dato | dato if t.slut_dato else 'aktiv' }}</td>
+        <td>{{ t.start_dato | dato }}</td>
+        <td>{% if t.slut_ts is not none and t.slut_ts <= nu %}{{ t.slut_dato | dato }}{% else %}
+          <form method="post" class="linje" data-bekraeft="Fjern måler {{ '%03d' % t.maaler_id }} fra brugeren pr. den valgte dato?">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="afslut">
+            <input type="hidden" name="tildeling_id" value="{{ t.id }}">
+            <input type="date" name="slut_dato" value="{{ t.slut_dato or i_dag }}" style="width:150px"><button class="sek lille">Fjern</button>
+          </form>{% endif %}</td>
         <td class="n">{{ s.kwh | dk(1) if s else '' }}</td><td>{% if s %}{{ gr.gruppe(s.gruppe, s.label) }}{% endif %}</td></tr>
     {% else %}<tr><td colspan="7" class="muted">Ingen målere.</td></tr>{% endfor %}
     </tbody>

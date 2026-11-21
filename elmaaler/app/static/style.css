@@ -92,3 +92,10 @@ code { background: #eef2f5; padding: 1px 5px; border-radius: 4px; font-size: 13p
   .skjul-mobil { display: none; }
   main { padding: 14px 10px 40px; } .kort { padding: 14px; }
 }
+
+/* faner på System-siderne */
+nav.faner { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--linje); margin: 0 0 18px; }
+nav.faner a { padding: 7px 12px; text-decoration: none; color: var(--hav2); border-radius: 6px 6px 0 0; }
+nav.faner a.aktiv { background: var(--kort); border: 1px solid var(--linje); border-bottom-color: var(--kort); margin-bottom: -1px; font-weight: 600; }
+.badge.admin { background: #5b2a86; color: #fff; }
+table input[type=text].kompakt { width: 100%; min-width: 90px; padding: 3px 6px; }

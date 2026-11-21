@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}System – måleropsætning{% endblock %}
+{% block indhold %}
+<h1>Systemadministration</h1>
+{% include "_system_nav.html" %}
+
+<div class="kort">
+  <div class="maaler-hoved"><h2>Måleropsætning ({{ maalere | length }} målere)</h2>
+    <input type="search" placeholder="Søg målernr. eller bruger…" data-filter="opsaetning" style="width:260px"></div>
+  <p class="muted">Placering (stander-udtag, fx <code>S12-U3</code>), aktiv og note for alle målere. Inaktive målere giver ikke
+    offline-varsler. Antal målere (<code>METER_COUNT={{ config.METER_COUNT }}</code>) og Home Assistant-entiteter
+    (<code>{{ config.HA_ENERGY_ENTITY }}</code>) sættes i <code>.env</code>. Kun ændrede rækker gemmes.</p>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <div class="tabel-wrap" style="max-height:640px;overflow-y:auto"><table id="opsaetning">
+      <thead><tr><th>Måler</th><th>Placering</th><th>Aktiv</th><th>Note</th><th>Status</th><th>Tildelt</th></tr></thead>
+      <tbody>
+      {% for m in maalere %}{% set t = aktive.get(m.id) %}
+        <tr><td><a href="{{ url_for('kontor_maaler', nr=m.id) }}"><strong>{{ '%03d' % m.id }}</strong></a></td>
+          <td><input type="text" class="kompakt" name="placering_{{ m.id }}" value="{{ m.placering }}" style="max-width:110px"></td>
+          <td><input type="checkbox" name="aktiv_{{ m.id }}" {{ 'checked' if m.aktiv }}></td>
+          <td><input type="text" class="kompakt" name="note_{{ m.id }}" value="{{ m.note }}"></td>
+          <td>{{ gr.status('online' if m.tilgaengelig else ('offline' if m.sidst_set else 'ukendt')) }}</td>
+          <td>{% if t %}{{ t.navn or t.email }}{% if t.baad %} · {{ t.baad }}{% endif %}{% else %}<span class="muted">ledig</span>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <button style="margin-top:12px">Gem ændringer</button>
+  </form>
+</div>
+{% endblock %}

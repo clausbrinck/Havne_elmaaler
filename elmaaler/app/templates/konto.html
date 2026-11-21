@@ -23,5 +23,19 @@
       <button>Skift adgangskode</button>
     </form>
   </div>
+  {% if er_kontor %}
+  <div class="kort">
+    <h2>Mine havnekontor-mails</h2>
+    <form method="post">
+      <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="kontor_mails">
+      <label class="check"><input type="checkbox" name="mail_offline" {{ 'checked' if bruger.mail_offline }}> <span>Mangler forbindelse til måler nr. … (og fejl på Home Assistant / backup)</span></label>
+      <label class="check"><input type="checkbox" name="mail_dag" {{ 'checked' if bruger.mail_dag }}> <span>Samlet forbrug hvert døgn</span></label>
+      <label class="check"><input type="checkbox" name="mail_uge" {{ 'checked' if bruger.mail_uge }}> <span>Samlet forbrug hver uge</span></label>
+      <label class="check"><input type="checkbox" name="mail_maaned" {{ 'checked' if bruger.mail_maaned }}> <span>Månedsopgørelse med CSV-fil vedhæftet</span></label>
+      <button>Gem</button>
+    </form>
+    <p class="muted">Sendes til {{ bruger.email }}. Har du selv en måler, vælges mails om dit eget forbrug under Min side.</p>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

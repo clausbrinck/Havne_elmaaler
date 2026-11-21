@@ -10,15 +10,18 @@ from .tid import nu
 
 
 def opret_admin():
+    """Sørg for at der findes en systemadministrator. Findes ADMIN_EMAIL allerede (fx som
+    havnekontor fra en ældre version), gøres den til admin – kodeordet røres ikke."""
     if not (config.ADMIN_EMAIL and config.ADMIN_PASSWORD):
         return
+    email = config.ADMIN_EMAIL.lower()
     with db.db() as c:
-        if c.execute("SELECT 1 FROM brugere WHERE rolle='kontor'").fetchone():
+        if c.execute("SELECT 1 FROM brugere WHERE rolle='admin'").fetchone():
             return
         c.execute("INSERT OR IGNORE INTO brugere(email, navn, rolle, pw_hash, oprettet) VALUES (?,?,?,?,?)",
-                  (config.ADMIN_EMAIL.lower(), "Havnekontor", "kontor", sikkerhed.hash_kode(config.ADMIN_PASSWORD), nu()))
-        c.execute("UPDATE brugere SET rolle='kontor' WHERE email=?", (config.ADMIN_EMAIL.lower(),))
-    db.log("bruger", f"Første kontor-bruger oprettet: {config.ADMIN_EMAIL}")
+                  (email, "Systemadministrator", "admin", sikkerhed.hash_kode(config.ADMIN_PASSWORD), nu()))
+        c.execute("UPDATE brugere SET rolle='admin', aktiv=1 WHERE email=?", (email,))
+        db.log("bruger", f"Systemadministrator sat op: {email}", c)
 
 
 def main():

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titel %}System – log{% endblock %}
+{% block indhold %}
+<h1>Systemadministration</h1>
+{% include "_system_nav.html" %}
+
+<div class="kort">
+  <form method="get" class="linje" style="margin-bottom:12px">
+    <div><label>Type</label><select name="type" style="width:auto">
+      <option value="">Alle</option>
+      {% for t in typer %}<option value="{{ t }}" {{ 'selected' if t == type_ }}>{{ t }}</option>{% endfor %}
+    </select></div>
+    <div style="flex:1"><label>Søg i tekst</label><input type="search" name="q" value="{{ q }}" placeholder="fx måler 012, email, backup…"></div>
+    <button>Vis</button>
+    {% if type_ or q %}<a class="knap sek" href="{{ url_for('system_log') }}">Nulstil</a>{% endif %}
+  </form>
+  <p class="muted">{{ haend | length }} hændelser{% if haend | length == 1000 %} (de nyeste 1.000 vises){% endif %}.
+    Loggen gemmes i et år.</p>
+  <div class="tabel-wrap"><table>
+    <thead><tr><th>Tid</th><th>Type</th><th>Hændelse</th></tr></thead>
+    <tbody>{% for h in haend %}<tr><td class="muted" style="white-space:nowrap">{{ h.ts | tid }}</td>
+      <td><span class="badge {{ 'offline' if h.type == 'fejl' else 'ukendt' }}">{{ h.type }}</span></td><td>{{ h.tekst }}</td></tr>
+    {% else %}<tr><td colspan="3" class="muted">Ingen hændelser.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+{% endblock %}

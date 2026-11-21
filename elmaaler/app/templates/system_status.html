@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% import "_graf.html" as gr %}
-{% block titel %}Netværk og status{% endblock %}
+{% block titel %}System – status{% endblock %}
 {% block indhold %}
-<h1>Netværk og status</h1>
+<h1>Systemadministration</h1>
+{% include "_system_nav.html" %}
 
 <div class="gitter">
   <div class="tal {{ 'ok' if ha.ok else 'fejl' }}"><div class="v">{{ 'OK' if ha.ok else 'FEJL' }}</div>
@@ -35,7 +36,7 @@
 <div class="kort">
   <h2>Brugere og logins</h2>
   <div class="gitter">
-    <div class="tal"><div class="v">{{ login.aktive }}</div><div class="l">Aktive brugere ({{ login.kontor }} kontor)</div></div>
+    <div class="tal"><div class="v">{{ login.aktive }}</div><div class="l">Aktive brugere ({{ login.kontor }} havnekontor, {{ login.admin }} admin)</div></div>
     <div class="tal"><div class="v">{{ login['30_dage'] }}</div><div class="l">Logget ind sidste 30 dage</div></div>
     <div class="tal {{ 'adv' if login.uden_kode }}"><div class="v">{{ login.uden_kode }}</div><div class="l">Har ikke valgt kode</div></div>
   </div>
@@ -50,7 +51,7 @@
 </div>
 
 <div class="kort">
-  <h2>Hændelseslog</h2>
+  <div class="maaler-hoved"><h2>Seneste hændelser</h2><a href="{{ url_for('system_log') }}">Hele systemloggen →</a></div>
   <div style="max-height:400px;overflow-y:auto"><table>
     <tbody>{% for h in haend %}<tr><td class="muted" style="white-space:nowrap">{{ h.ts | tid }}</td><td><span class="badge {{ 'offline' if h.type == 'fejl' else 'ukendt' }}">{{ h.type }}</span></td><td>{{ h.tekst }}</td></tr>
     {% else %}<tr><td class="muted">Ingen hændelser.</td></tr>{% endfor %}</tbody>
