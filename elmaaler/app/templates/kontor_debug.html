@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% import "_graf.html" as gr %}
+{% block titel %}Debug – simulér forbrug{% endblock %}
+{% block indhold %}
+<h1>Debug – simulér forbrug</h1>
+
+<div class="gitter2">
+<div class="kort">
+  <h2>Tilføj simuleret forbrug</h2>
+  <form method="post">
+    <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="tilfoej">
+    <div class="felt"><label>Målere (fx <code>12</code>, <code>12, 14</code> eller <code>20-25</code>)</label>
+      <input type="text" name="maalere" required placeholder="12, 14, 20-25"></div>
+    <div class="felter">
+      <div class="felt"><label>Fra dato</label><input type="date" name="fra" value="{{ maaned_start }}" max="{{ i_dag }}" required></div>
+      <div class="felt"><label>Til dato (inkl.)</label><input type="date" name="til" value="{{ i_dag }}" max="{{ i_dag }}" required></div>
+      <div class="felt"><label>kWh i alt pr. måler</label><input type="number" name="kwh" min="0.1" step="0.1" required></div>
+      <div class="felt"><label>Fordeling</label><select name="profil">
+        <option value="dag">Mest dag/aften (realistisk)</option>
+        <option value="jaevn">Jævnt hele døgnet</option></select></div>
+    </div>
+    <button>Tilføj forbrug</button>
+  </form>
+  <p class="muted">Forbruget lægges i 15-minutters intervaller <strong>oven i</strong> målerens rigtige forbrug og tæller med
+    i alle sider, grafer, grupper og CSV. Tællerstande ændres ikke. Tilføjer du flere gange på samme måler og periode,
+    lægges det sammen. Perioden kan ikke gå ud over i dag.</p>
+</div>
+
+<div class="kort">
+  <h2>Forbrugsgrupper (til at ramme en gruppe)</h2>
+  <table>
+    <thead><tr><th>Gruppe</th><th class="n">Pris pr. måned</th></tr></thead>
+    <tbody>
+    {% for k in kategorier %}
+      <tr><td>{{ gr.gruppe(k.nr, k.label) }}</td><td class="n">{{ k.pris | dk(0) }} kr</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">Gruppen afgøres af forbruget i hele kalendermåneden (rigtigt + simuleret), afrundet til hele kWh.
+    For at ramme en bestemt gruppe i en måned: vælg perioden inden for måneden og læg målerens rigtige forbrug til.</p>
+  <h3>Mens der findes simuleret forbrug</h3>
+  <ul class="muted">
+    <li>Mails til <strong>medlemmer</strong> (advarsler, døgn, uge, måned) er sat på pause. Havnekontorets mails sendes stadig.</li>
+    <li>Låste måneder, som perioden rører, genberegnes automatisk – også når forbruget slettes igen.</li>
+    <li>Medlemmer kan se det simulerede forbrug på deres side, hvis deres måler er med.</li>
+  </ul>
+</div>
+</div>
+
+<div class="kort">
+  <div class="maaler-hoved"><h2>Simuleret forbrug nu</h2>
+    {% if sim %}
+    <form method="post" data-bekraeft="Slet AL simuleret forbrug på alle målere?">
+      <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="slet_alle">
+      <button class="fare">Slet alt simuleret forbrug</button></form>
+    {% endif %}
+  </div>
+  <div class="tabel-wrap"><table>
+    <thead><tr><th>Måler</th><th>Placering</th><th>Periode</th><th class="n">kWh simuleret</th><th></th></tr></thead>
+    <tbody>
+    {% for s in sim %}
+      <tr><td><a href="{{ url_for('kontor_maaler', nr=s.maaler_id) }}">{{ '%03d' % s.maaler_id }}</a></td>
+        <td>{{ s.placering }}</td>
+        <td>{{ s.fra_dato.isoformat() | dato }} – {{ s.til_dato.isoformat() | dato }}</td>
+        <td class="n">{{ s.kwh | dk(1) }}</td>
+        <td><form method="post" data-bekraeft="Slet simuleret forbrug på måler {{ '%03d' % s.maaler_id }}?">
+          <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="slet">
+          <input type="hidden" name="maaler_id" value="{{ s.maaler_id }}"><button class="fare lille">Slet</button></form></td></tr>
+    {% else %}<tr><td colspan="5" class="muted">Intet simuleret forbrug – alle tal er rigtige.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

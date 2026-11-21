@@ -105,6 +105,22 @@ CREATE TABLE IF NOT EXISTS indstillinger (
     noegle  TEXT PRIMARY KEY,
     vaerdi  TEXT NOT NULL
 );
+
+-- Simuleret forbrug fra debug-siden. Lægges OVEN I de rigtige aflæsninger og kan slettes igen;
+-- tællerstande (energi_kwh) røres ikke.
+CREATE TABLE IF NOT EXISTS sim_forbrug (
+    maaler_id  INTEGER NOT NULL,
+    ts         INTEGER NOT NULL,              -- 15-min-slot som i aflaesninger
+    delta_kwh  REAL NOT NULL,
+    PRIMARY KEY (maaler_id, ts)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS ix_sim_ts ON sim_forbrug(ts);
+
+-- Alt forbrug (rigtigt + simuleret). Bruges af alle forbrugsberegninger.
+CREATE VIEW IF NOT EXISTS alle_delta AS
+    SELECT maaler_id, ts, delta_kwh FROM aflaesninger
+    UNION ALL
+    SELECT maaler_id, ts, delta_kwh FROM sim_forbrug;
 """
 
 # Forbrugsgrupper jf. "Sådan afregnes vinterstrøm" (1. nov – 31. mar).

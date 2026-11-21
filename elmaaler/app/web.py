@@ -10,7 +10,7 @@ from functools import wraps
 from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
                    send_from_directory, session, url_for)
 
-from . import backup, collector, config, db, forbrug, mailer, rapport, sikkerhed
+from . import backup, collector, config, db, forbrug, mailer, rapport, sikkerhed, simulering
 from .tid import (nu, i_dag, maaned_str, maaned_grænser, maaned_navn, naeste_maaned,
                   parse_dato, dato_ts, fmt_tid, fmt_dato, siden, lokal)
 
@@ -34,8 +34,10 @@ app.jinja_env.filters.update(dk=rapport.dk, tid=fmt_tid, dato=fmt_dato, siden=si
 
 @app.context_processor
 def faelles():
-    return {"klub": config.KLUB_NAVN, "bruger": g.get("bruger"), "csrf": csrf_token,
-            "maaned_navn": maaned_navn, "nu": nu()}
+    b = g.get("bruger")
+    sim = bool(b and b["rolle"] == "kontor" and simulering.aktiv())
+    return {"klub": config.KLUB_NAVN, "bruger": b, "csrf": csrf_token,
+            "maaned_navn": maaned_navn, "nu": nu(), "sim_aktiv": sim}
 
 
 def csrf_token():
@@ -513,7 +515,7 @@ def kontor_bruger(bid):
 
 def _maaned_liste():
     with db.db() as c:
-        r = c.execute("SELECT MIN(ts) FROM aflaesninger").fetchone()[0]
+        r = c.execute("SELECT MIN(ts) FROM alle_delta").fetchone()[0]
     nu_m = maaned_str(i_dag())
     m = maaned_str(lokal(r).date()) if r else nu_m
     ud = []
@@ -666,6 +668,33 @@ def kontor_backup_hent(navn):
     if not re.fullmatch(r"elmaaler-\d{8}-\d{6}\.db\.gz", navn):
         abort(404)
     return send_from_directory(config.BACKUP_DIR, navn, as_attachment=True)
+
+
+@app.route("/kontor/debug", methods=["GET", "POST"])
+@kontor_kraevet
+def kontor_debug():
+    """Simulér forbrug på udvalgte målere – til test af opgørelser, grupper og grafer."""
+    if request.method == "POST":
+        h = request.form.get("handling")
+        try:
+            if h == "tilfoej":
+                maalere = simulering.parse_maalere(request.form.get("maalere", ""))
+                kwh = float(request.form.get("kwh", "0").replace(",", "."))
+                laast = simulering.tilfoej(maalere, parse_dato(request.form["fra"]), parse_dato(request.form["til"]),
+                                           kwh, request.form.get("profil", "dag"), g.bruger["email"])
+                flash(f"{kwh:g} kWh simuleret på {len(maalere)} måler(e)."
+                      + (f" Låste måneder genberegnet: {', '.join(laast)}." if laast else ""), "ok")
+            elif h in ("slet", "slet_alle"):
+                nr = int(request.form["maaler_id"]) if h == "slet" else None
+                laast = simulering.slet(nr, g.bruger["email"])
+                flash("Simuleret forbrug slettet."
+                      + (f" Låste måneder genberegnet: {', '.join(laast)}." if laast else ""), "ok")
+        except (ValueError, KeyError) as e:
+            flash(str(e) or "Ugyldige værdier.", "fejl")
+        return redirect(url_for("kontor_debug"))
+    idag = i_dag()
+    return render_template("kontor_debug.html", sim=simulering.oversigt(), kategorier=forbrug.kategorier(),
+                           i_dag=idag.isoformat(), maaned_start=idag.replace(day=1).isoformat())
 
 
 @app.route("/kontor/import", methods=["GET", "POST"])

@@ -56,7 +56,7 @@ def kategoriser(kwh: float, maaned: str) -> dict:
 # ---------------------------------------------------------------- summer
 
 def sum_delta(c, maaler_id, fra, til):
-    r = c.execute("SELECT COALESCE(SUM(delta_kwh),0) FROM aflaesninger "
+    r = c.execute("SELECT COALESCE(SUM(delta_kwh),0) FROM alle_delta "
                   "WHERE maaler_id=? AND ts>? AND ts<=?", (maaler_id, fra, til)).fetchone()
     return r[0]
 
@@ -83,13 +83,13 @@ def dagsserie(c, maaler_ids, fra_dato, til_dato):
     """Dagligt forbrug (kWh) for en liste af målere (None = alle) – dict dato -> kWh."""
     fra, til = dato_ts(fra_dato), dato_ts(til_dato)
     if maaler_ids is None:
-        rows = c.execute("SELECT ts, SUM(delta_kwh) d FROM aflaesninger WHERE ts>? AND ts<=? GROUP BY ts",
+        rows = c.execute("SELECT ts, SUM(delta_kwh) d FROM alle_delta WHERE ts>? AND ts<=? GROUP BY ts",
                          (fra, til)).fetchall()
     elif not maaler_ids:
         rows = []
     else:
         q = ",".join("?" * len(maaler_ids))
-        rows = c.execute(f"SELECT ts, SUM(delta_kwh) d FROM aflaesninger WHERE maaler_id IN ({q}) "
+        rows = c.execute(f"SELECT ts, SUM(delta_kwh) d FROM alle_delta WHERE maaler_id IN ({q}) "
                          f"AND ts>? AND ts<=? GROUP BY ts", (*maaler_ids, fra, til)).fetchall()
     ud = defaultdict(float)
     d = fra_dato
@@ -104,7 +104,7 @@ def dagsserie(c, maaler_ids, fra_dato, til_dato):
 def effektserie(c, timer=24):
     """Samlet gennemsnitseffekt (kW) pr. aflæsningsinterval, sidste N timer."""
     fra = nu() - timer * 3600
-    rows = c.execute("SELECT ts, SUM(delta_kwh) d, COUNT(*) n FROM aflaesninger WHERE ts>? GROUP BY ts ORDER BY ts",
+    rows = c.execute("SELECT ts, SUM(delta_kwh) d, COUNT(*) n FROM alle_delta WHERE ts>? GROUP BY ts ORDER BY ts",
                      (fra,)).fetchall()
     from .config import STORE_MINUTES
     return [(r["ts"], (r["d"] or 0) * 60 / STORE_MINUTES) for r in rows]

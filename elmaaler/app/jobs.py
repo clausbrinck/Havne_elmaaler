@@ -3,7 +3,7 @@ import logging
 import time
 from datetime import timedelta
 
-from . import backup, collector, config, db, forbrug, mailer, rapport
+from . import backup, collector, config, db, forbrug, mailer, rapport, simulering
 from .tid import nu, lokal, i_dag, maaned_str, forrige_maaned, maaned_navn, fmt_tid
 
 log = logging.getLogger("jobs")
@@ -88,6 +88,8 @@ def tjek_advarsler():
     maaned = maaned_str(i_dag())
     if not forbrug.afregnes(maaned):
         return
+    if simulering.aktiv():
+        return   # ingen advarsler til medlemmer mens der er simuleret forbrug
     pct = float(db.hent("advarsel_procent") or 90)
     with db.db() as c:
         for t in forbrug.aktive_tildelinger(c):
@@ -173,10 +175,12 @@ def planlagte():
     if not _klokken_passeret(db.hent("mail_tidspunkt") or "06:00"):
         return
 
+    # mails til medlemmer sættes på pause, så længe der findes simuleret forbrug (debug-siden)
+    medlemmer = not simulering.aktiv()
     i_gaar = dato - timedelta(days=1)
     if _engang(f"job:dag:{dato}"):
         with db.db() as c:
-            for b in _brugere_med(c, "mail_dag"):
+            for b in (_brugere_med(c, "mail_dag") if medlemmer else []):
                 tl = forbrug.aktive_tildelinger(c, bruger_id=b["id"])
                 mailer.send(b["email"], f"Dagligt elforbrug {i_gaar:%d-%m-%Y}", rapport.bruger_dag(c, b, tl, i_gaar))
             modt = _kontor_modtagere("mail_dag")
@@ -188,7 +192,7 @@ def planlagte():
     if dato.weekday() == 0 and _engang(f"job:uge:{dato}"):
         mandag = dato - timedelta(days=7)
         with db.db() as c:
-            for b in _brugere_med(c, "mail_uge"):
+            for b in (_brugere_med(c, "mail_uge") if medlemmer else []):
                 tl = forbrug.aktive_tildelinger(c, bruger_id=b["id"])
                 mailer.send(b["email"], f"Ugentligt elforbrug uge {mandag.isocalendar()[1]}",
                             rapport.bruger_uge(c, b, tl, mandag))
@@ -209,7 +213,7 @@ def planlagte():
             with db.db() as c:
                 for bid, br in pr_bruger.items():
                     b = c.execute("SELECT * FROM brugere WHERE id=?", (bid,)).fetchone()
-                    if b["aktiv"] and b["mail_maaned"]:
+                    if medlemmer and b["aktiv"] and b["mail_maaned"]:
                         mailer.send(b["email"], f"Elforbrug {maaned_navn(m)}", rapport.bruger_maaned(b, br, m))
             modt = _kontor_modtagere("mail_maaned")
             if modt:

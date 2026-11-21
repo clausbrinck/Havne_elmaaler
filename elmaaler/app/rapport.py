@@ -87,7 +87,7 @@ def kontor_periode(c, fra_dato, til_dato, titel):
                    "SUM(COALESCE(effekt_w,0)) effekt FROM status s JOIN maalere m ON m.id=s.maaler_id "
                    "WHERE m.aktiv=1").fetchone()
     fra, til = (forbrug.dato_ts(fra_dato), forbrug.dato_ts(til_dato))
-    top = c.execute("SELECT maaler_id, SUM(delta_kwh) k FROM aflaesninger WHERE ts>? AND ts<=? "
+    top = c.execute("SELECT maaler_id, SUM(delta_kwh) k FROM alle_delta WHERE ts>? AND ts<=? "
                     "GROUP BY maaler_id ORDER BY k DESC LIMIT 10", (fra, til)).fetchall()
     linjer = [titel, "", f"Samlet forbrug alle målere: {dk(total)} kWh"]
     if len(serie) > 1:

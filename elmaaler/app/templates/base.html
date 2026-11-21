@@ -19,6 +19,7 @@
       <a href="{{ url_for('kontor_opgoerelse') }}" class="{{ 'aktiv' if ep == 'kontor_opgoerelse' }}">Opgørelse</a>
       <a href="{{ url_for('kontor_netvaerk') }}" class="{{ 'aktiv' if ep == 'kontor_netvaerk' }}">Netværk &amp; status</a>
       <a href="{{ url_for('kontor_indstillinger') }}" class="{{ 'aktiv' if ep == 'kontor_indstillinger' }}">Indstillinger</a>
+      <a href="{{ url_for('kontor_debug') }}" class="{{ 'aktiv' if ep == 'kontor_debug' }}">Debug</a>
     {% endif %}
     <a href="{{ url_for('min_side') }}" class="{{ 'aktiv' if ep == 'min_side' }}">Min side</a>
     <a href="{{ url_for('min_konto') }}" class="{{ 'aktiv' if ep == 'min_konto' }}">Konto</a>
@@ -28,6 +29,8 @@
   {% endif %}
 </div></header>
 <main>
+  {% if sim_aktiv %}<div class="flash fejl">⚠ Der er <strong>simuleret forbrug</strong> i systemet – tallene er ikke kun rigtige målinger.
+    Mails til medlemmer er sat på pause. <a href="{{ url_for('kontor_debug') }}">Se/slet under Debug</a>.</div>{% endif %}
   {% for kat, besked in get_flashed_messages(with_categories=true) %}
     <div class="flash {{ kat }}">{{ besked }}</div>
   {% endfor %}

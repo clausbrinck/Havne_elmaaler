@@ -48,6 +48,10 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 - **Månedslås:** den 1. kl. 00:20 fryses forrige måned i `maanedsopgoerelser`; kan genberegnes manuelt.
 - **Offline:** bygger på HA-state `unavailable` → kræver Zigbee2MQTT `availability: enabled: true`.
 - **Engangsjob/varsler** dedupliceres via tabel `varsler_sendt` (nøgler som `job:dag:2026-11-21`, `adv:...`).
+- **Debug / simuleret forbrug** (`simulering.py`, side `/kontor/debug`): tabel `sim_forbrug` lægges oven i
+  `aflaesninger` via viewet `alle_delta` – alle forbrugssummer skal læse fra `alle_delta`, mens tællerstande
+  (`energi_kwh`) altid læses fra `aflaesninger`. Mens der findes simuleret forbrug, er mails til medlemmer på pause,
+  og berørte låste måneder genberegnes ved tilføj/slet.
 - **DB-låse:** åbn aldrig en ny forbindelse (fx `db.log()` eller `mailer.send()` der fejler og logger) mens en
   skrive-transaktion er åben – send `c` med til `db.log(type, tekst, c)` eller send mail efter commit.
 - Sikkerhed: PBKDF2-hash, CSRF-token på alle POST, login-spærring 10 forsøg/15 min, session ugyldig ved kodeskift.
