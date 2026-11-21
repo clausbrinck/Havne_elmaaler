@@ -12,7 +12,7 @@
 {% for k in kort %}
 <div class="kort">
   <div class="maaler-hoved">
-    <h2>Måler {{ '%03d' % k.t.maaler_id }}{% if k.t.placering %} · {{ k.t.placering }}{% endif %}</h2>
+    <h2>{% if k.t.baad %}{{ k.t.baad }} · {% endif %}Måler {{ '%03d' % k.t.maaler_id }}{% if k.t.placering %} · {{ k.t.placering }}{% endif %}</h2>
     <span>{{ gr.status('online' if k.st.tilgaengelig else ('offline' if k.st.sidst_set else 'ukendt'), k.t.maaler_id) }}
       <span class="muted">opdateret <span data-sidst="{{ k.t.maaler_id }}">{{ k.st.sidst_set | siden }}</span></span></span>
   </div>
@@ -74,10 +74,10 @@
   <h2>Tidligere måneder</h2>
   {% if historik %}
   <div class="tabel-wrap"><table>
-    <thead><tr><th>Måned</th><th>Måler</th><th class="skjul-mobil">Periode</th><th class="n">kWh</th><th>Gruppe</th><th class="n">Pris</th></tr></thead>
+    <thead><tr><th>Måned</th><th>Måler</th><th>Båd</th><th class="skjul-mobil">Periode</th><th class="n">kWh</th><th>Gruppe</th><th class="n">Pris</th></tr></thead>
     <tbody>
     {% for h in historik %}
-      <tr><td>{{ h.maaned | maaned_navn }}</td><td>{{ '%03d' % h.maaler_id }}</td>
+      <tr><td>{{ h.maaned | maaned_navn }}</td><td>{{ '%03d' % h.maaler_id }}</td><td>{{ h.baad }}</td>
         <td class="skjul-mobil muted">{{ h.fra_dato | dato }} – {{ h.til_dato | dato }}</td>
         <td class="n">{{ h.kwh | dk(1) }}</td>
         <td>{% if h.afregnes %}{{ gr.gruppe(h.gruppe, h.label) }}{% else %}<span class="muted">ikke afregnet</span>{% endif %}</td>

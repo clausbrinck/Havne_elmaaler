@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS brugere (
     id            INTEGER PRIMARY KEY,
     email         TEXT NOT NULL UNIQUE COLLATE NOCASE,
     navn          TEXT NOT NULL DEFAULT '',
-    baad          TEXT NOT NULL DEFAULT '',
+    baad          TEXT NOT NULL DEFAULT '',     -- forældet: båd står nu på tildelingen
     telefon       TEXT NOT NULL DEFAULT '',
     pw_hash       TEXT,
     rolle         TEXT NOT NULL DEFAULT 'bruger',   -- bruger | kontor
@@ -61,7 +61,8 @@ CREATE TABLE IF NOT EXISTS tildelinger (
     slut_dato   TEXT,                         -- ophørt pr. (kl. 00:00), NULL = aktiv
     start_ts    INTEGER NOT NULL,
     slut_ts     INTEGER,
-    oprettet    INTEGER
+    oprettet    INTEGER,
+    baad        TEXT NOT NULL DEFAULT ''     -- båden på denne måler (en bruger kan have flere både)
 );
 CREATE INDEX IF NOT EXISTS ix_tild_maaler ON tildelinger(maaler_id);
 CREATE INDEX IF NOT EXISTS ix_tild_bruger ON tildelinger(bruger_id);
@@ -76,6 +77,7 @@ CREATE TABLE IF NOT EXISTS maanedsopgoerelser (  -- låst opgørelse for afslutt
     gruppe     INTEGER,
     pris       REAL,
     beregnet   INTEGER,
+    baad       TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (maaned, maaler_id, fra_dato)
 );
 
@@ -159,6 +161,20 @@ def init():
             c.execute("INSERT OR IGNORE INTO status(maaler_id) VALUES (?)", (nr,))
         for k, v in STANDARD_INDSTILLINGER.items():
             c.execute("INSERT OR IGNORE INTO indstillinger VALUES (?, ?)", (k, json.dumps(v)))
+        _migrer(c)
+
+
+def _migrer(c):
+    """Opdatér ældre databaser. Båd flyttet fra bruger til tildeling (en bruger kan have flere både)."""
+    def kolonner(tabel):
+        return {r[1] for r in c.execute(f"PRAGMA table_info({tabel})")}
+    if "baad" not in kolonner("tildelinger"):
+        c.execute("ALTER TABLE tildelinger ADD COLUMN baad TEXT NOT NULL DEFAULT ''")
+        c.execute("UPDATE tildelinger SET baad=(SELECT b.baad FROM brugere b WHERE b.id=tildelinger.bruger_id)")
+    if "baad" not in kolonner("maanedsopgoerelser"):
+        c.execute("ALTER TABLE maanedsopgoerelser ADD COLUMN baad TEXT NOT NULL DEFAULT ''")
+        c.execute("UPDATE maanedsopgoerelser SET baad=COALESCE("
+                  "(SELECT b.baad FROM brugere b WHERE b.id=maanedsopgoerelser.bruger_id), '')")
 
 
 def hent(noegle):

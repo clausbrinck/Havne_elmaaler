@@ -29,6 +29,7 @@
     <div class="felter">
       <div class="felt"><label>…eller ny brugers email</label><input type="email" name="email"></div>
       <div class="felt"><label>Navn</label><input type="text" name="navn"></div>
+      <div class="felt"><label>Båd</label><input type="text" name="baad"></div>
       <div class="felt"><label>Startdato</label><input type="date" name="start_dato" value="{{ i_dag }}" required></div>
     </div>
     <button>Tildel måler</button>
@@ -36,10 +37,14 @@
 
   <h3>Historik</h3>
   <table>
-    <thead><tr><th>Bruger</th><th>Fra</th><th>Ophørt pr.</th><th></th></tr></thead>
+    <thead><tr><th>Bruger</th><th>Båd</th><th>Fra</th><th>Ophørt pr.</th><th></th></tr></thead>
     <tbody>
     {% for t in hist %}
       <tr><td><a href="{{ url_for('kontor_bruger', bid=t.bruger_id) }}">{{ t.navn or t.email }}</a></td>
+        <td><form method="post" class="linje">
+            <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="ret_baad">
+            <input type="hidden" name="tildeling_id" value="{{ t.id }}">
+            <input type="text" name="baad" value="{{ t.baad }}" style="width:140px"><button class="sek lille">Gem</button></form></td>
         <td>{{ t.start_dato | dato }}</td>
         <td>{% if t.slut_dato %}{{ t.slut_dato | dato }}{% else %}
           <form method="post" class="linje">
@@ -50,7 +55,7 @@
         <td><form method="post" data-bekraeft="Slet tildelingen helt? Brug kun hvis den er oprettet ved en fejl.">
             <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="slet_tildeling">
             <input type="hidden" name="tildeling_id" value="{{ t.id }}"><button class="fare lille">Slet</button></form></td></tr>
-    {% else %}<tr><td colspan="4" class="muted">Aldrig tildelt.</td></tr>{% endfor %}
+    {% else %}<tr><td colspan="5" class="muted">Aldrig tildelt.</td></tr>{% endfor %}
     </tbody>
   </table>
 </div>

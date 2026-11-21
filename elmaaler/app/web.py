@@ -334,7 +334,7 @@ def _find_eller_opret_bruger(c, email, navn=""):
     return c.execute("SELECT * FROM brugere WHERE email=?", (email,)).fetchone(), True
 
 
-def _tildel(c, maaler_id, bruger_id, start):
+def _tildel(c, maaler_id, bruger_id, start, baad=""):
     """Tildel måler fra startdato. En aktiv tildeling afsluttes automatisk pr. samme dato."""
     s_ts = dato_ts(start)
     seneste = c.execute("SELECT * FROM tildelinger WHERE maaler_id=? ORDER BY start_ts DESC LIMIT 1",
@@ -345,8 +345,8 @@ def _tildel(c, maaler_id, bruger_id, start):
         if seneste["slut_ts"] is None or seneste["slut_ts"] > s_ts:
             c.execute("UPDATE tildelinger SET slut_dato=?, slut_ts=? WHERE id=?",
                       (start.isoformat(), s_ts, seneste["id"]))
-    c.execute("INSERT INTO tildelinger(maaler_id, bruger_id, start_dato, start_ts, oprettet) VALUES (?,?,?,?,?)",
-              (maaler_id, bruger_id, start.isoformat(), s_ts, nu()))
+    c.execute("INSERT INTO tildelinger(maaler_id, bruger_id, start_dato, start_ts, oprettet, baad) VALUES (?,?,?,?,?,?)",
+              (maaler_id, bruger_id, start.isoformat(), s_ts, nu(), (baad or "").strip()))
 
 
 @app.route("/kontor/maaler/<int:nr>", methods=["GET", "POST"])
@@ -371,7 +371,7 @@ def kontor_maaler(nr):
                         b = c.execute("SELECT * FROM brugere WHERE id=?", (int(bid),)).fetchone()
                     else:
                         b, ny = _find_eller_opret_bruger(c, request.form.get("email", ""), request.form.get("navn", ""))
-                    _tildel(c, nr, b["id"], parse_dato(request.form["start_dato"]))
+                    _tildel(c, nr, b["id"], parse_dato(request.form["start_dato"]), request.form.get("baad", ""))
                     db.log("tildeling", f"Måler {nr:03d} tildelt {b['email']} fra {request.form['start_dato']} "
                                         f"(af {g.bruger['email']})", c)
                     flash(f"Måler {nr:03d} er tildelt {b['navn'] or b['email']}.", "ok")
@@ -385,6 +385,10 @@ def kontor_maaler(nr):
                               (slut.isoformat(), dato_ts(slut), tid_))
                     db.log("tildeling", f"Tildeling af måler {nr:03d} afsluttet pr. {slut} (af {g.bruger['email']})", c)
                     flash("Tildelingen er afsluttet.", "ok")
+                elif h == "ret_baad":
+                    c.execute("UPDATE tildelinger SET baad=? WHERE id=? AND maaler_id=?",
+                              (request.form.get("baad", "").strip(), int(request.form["tildeling_id"]), nr))
+                    flash("Båd gemt.", "ok")
                 elif h == "slet_tildeling":
                     c.execute("DELETE FROM tildelinger WHERE id=? AND maaler_id=?", (int(request.form["tildeling_id"]), nr))
                     db.log("tildeling", f"Tildeling på måler {nr:03d} slettet (af {g.bruger['email']})", c)
@@ -419,8 +423,8 @@ def kontor_brugere():
                     raise ValueError("Der findes allerede en bruger med den email.")
                 b, _ = _find_eller_opret_bruger(c, email, request.form.get("navn", ""))
                 rolle = "kontor" if request.form.get("rolle") == "kontor" else "bruger"
-                c.execute("UPDATE brugere SET baad=?, telefon=?, rolle=? WHERE id=?",
-                          (request.form.get("baad", "").strip(), request.form.get("telefon", "").strip(), rolle, b["id"]))
+                c.execute("UPDATE brugere SET telefon=?, rolle=? WHERE id=?",
+                          (request.form.get("telefon", "").strip(), rolle, b["id"]))
                 kode = request.form.get("kode", "")
                 if kode:
                     if sikkerhed.kode_ok(kode):
@@ -428,7 +432,8 @@ def kontor_brugere():
                     c.execute("UPDATE brugere SET pw_hash=? WHERE id=?", (sikkerhed.hash_kode(kode), b["id"]))
                 maaler = request.form.get("maaler")
                 if maaler:
-                    _tildel(c, int(maaler), b["id"], parse_dato(request.form.get("start_dato") or i_dag().isoformat()))
+                    _tildel(c, int(maaler), b["id"], parse_dato(request.form.get("start_dato") or i_dag().isoformat()),
+                            request.form.get("baad", ""))
                 b = c.execute("SELECT * FROM brugere WHERE id=?", (b["id"],)).fetchone()
             db.log("bruger", f"Bruger {email} oprettet (af {g.bruger['email']})")
             if request.form.get("inviter"):
@@ -445,7 +450,9 @@ def kontor_brugere():
     with db.db() as c:
         brugere = c.execute(
             "SELECT b.*, (SELECT GROUP_CONCAT(printf('%03d', t.maaler_id), ', ') FROM tildelinger t "
-            "  WHERE t.bruger_id=b.id AND t.start_ts<=?1 AND (t.slut_ts IS NULL OR t.slut_ts>?1)) maalere "
+            "  WHERE t.bruger_id=b.id AND t.start_ts<=?1 AND (t.slut_ts IS NULL OR t.slut_ts>?1)) maalere, "
+            "(SELECT GROUP_CONCAT(NULLIF(t.baad, ''), ', ') FROM tildelinger t "
+            "  WHERE t.bruger_id=b.id AND t.start_ts<=?1 AND (t.slut_ts IS NULL OR t.slut_ts>?1)) baade "
             "FROM brugere b ORDER BY b.rolle DESC, b.navn COLLATE NOCASE, b.email", (nu(),)).fetchall()
     return render_template("kontor_brugere.html", brugere=brugere, i_dag=i_dag().isoformat())
 
@@ -469,8 +476,8 @@ def kontor_bruger(bid):
                     aktiv = 1 if request.form.get("aktiv") else 0
                     if bid == g.bruger["id"] and (rolle != "kontor" or not aktiv):
                         raise ValueError("Du kan ikke fjerne din egen kontor-adgang.")
-                    c.execute("UPDATE brugere SET email=?, navn=?, baad=?, telefon=?, rolle=?, aktiv=? WHERE id=?",
-                              (email, request.form.get("navn", "").strip(), request.form.get("baad", "").strip(),
+                    c.execute("UPDATE brugere SET email=?, navn=?, telefon=?, rolle=?, aktiv=? WHERE id=?",
+                              (email, request.form.get("navn", "").strip(),
                                request.form.get("telefon", "").strip(), rolle, aktiv, bid))
                     flash("Bruger gemt.", "ok")
                 elif h == "kode":
@@ -480,8 +487,13 @@ def kontor_bruger(bid):
                     c.execute("UPDATE brugere SET pw_hash=? WHERE id=?", (sikkerhed.hash_kode(kode), bid))
                     flash("Ny adgangskode sat.", "ok")
                 elif h == "tildel":
-                    _tildel(c, int(request.form["maaler"]), bid, parse_dato(request.form["start_dato"]))
+                    _tildel(c, int(request.form["maaler"]), bid, parse_dato(request.form["start_dato"]),
+                            request.form.get("baad", ""))
                     flash("Måler tildelt.", "ok")
+                elif h == "ret_baad":
+                    c.execute("UPDATE tildelinger SET baad=? WHERE id=? AND bruger_id=?",
+                              (request.form.get("baad", "").strip(), int(request.form["tildeling_id"]), bid))
+                    flash("Båd gemt.", "ok")
         except Exception as e:  # noqa: BLE001
             flash(str(e) if isinstance(e, ValueError) else "Kunne ikke gemme (email bruges måske allerede).", "fejl")
         if h in ("invitation", "nulstil"):
@@ -544,7 +556,7 @@ def kontor_opgoerelse_csv():
 @app.route("/kontor/vinter.csv")
 @kontor_kraevet
 def kontor_vinter_csv():
-    """Samlet opgørelse for en vinterperiode (nov–mar) pr. bruger – til opkrævning ved standerhejsning."""
+    """Samlet opgørelse for en vinterperiode (nov–mar) pr. bruger og båd – til opkrævning ved standerhejsning."""
     aar = int(request.args.get("aar") or (i_dag().year if i_dag().month >= 11 else i_dag().year - 1))
     maaneder = [f"{aar}-{m:02d}" for m in (11, 12)] + [f"{aar + 1}-{m:02d}" for m in (1, 2, 3)]
     sum_ = {}
@@ -555,7 +567,7 @@ def kontor_vinter_csv():
         for r in rows:
             if r["bruger_id"] is None or not r["afregnes"]:
                 continue
-            s = sum_.setdefault(r["bruger_id"], {"navn": r["navn"], "email": r["email"], "baad": r["baad"],
+            s = sum_.setdefault((r["bruger_id"], r["baad"]), {"navn": r["navn"], "email": r["email"], "baad": r["baad"],
                                                  "pr": {}, "kwh": 0.0, "pris": 0.0})
             s["pr"][m] = s["pr"].get(m, 0) + (r["pris"] or 0)
             s["kwh"] += r["kwh"]
@@ -564,7 +576,7 @@ def kontor_vinter_csv():
     buf.write("﻿")
     w = csv.writer(buf, delimiter=";")
     w.writerow(["Navn", "Email", "Båd", *[maaned_navn(m) + " (kr)" for m in maaneder], "kWh i alt", "Beløb i alt (kr)"])
-    for s in sorted(sum_.values(), key=lambda s: s["navn"].lower()):
+    for s in sorted(sum_.values(), key=lambda s: (s["navn"].lower(), s["baad"].lower())):
         w.writerow([s["navn"], s["email"], s["baad"], *[rapport.dk(s["pr"].get(m, 0), 0) for m in maaneder],
                     rapport.dk(s["kwh"], 1), rapport.dk(s["pris"], 0)])
     return Response(buf.getvalue().encode("utf-8"), mimetype="text/csv",
@@ -682,12 +694,14 @@ def kontor_import():
                         c.execute("UPDATE maalere SET placering=? WHERE id=?", (r["placering"].upper(), nr))
                     if r.get("email"):
                         b, ny = _find_eller_opret_bruger(c, r["email"], r.get("navn", ""))
-                        c.execute("UPDATE brugere SET baad=COALESCE(NULLIF(?,''), baad), "
-                                  "telefon=COALESCE(NULLIF(?,''), telefon) WHERE id=?",
-                                  (r.get("baad") or r.get("båd") or "", r.get("telefon", ""), b["id"]))
+                        baad = r.get("baad") or r.get("båd") or ""
+                        c.execute("UPDATE brugere SET telefon=COALESCE(NULLIF(?,''), telefon) WHERE id=?",
+                                  (r.get("telefon", ""), b["id"]))
                         aktiv = forbrug.aktive_tildelinger(c, maaler_id=nr)
                         if not (aktiv and aktiv[0]["bruger_id"] == b["id"]):
-                            _tildel(c, nr, b["id"], parse_dato(r.get("start_dato") or i_dag().isoformat()))
+                            _tildel(c, nr, b["id"], parse_dato(r.get("start_dato") or i_dag().isoformat()), baad)
+                        elif baad:
+                            c.execute("UPDATE tildelinger SET baad=? WHERE id=?", (baad, aktiv[0]["id"]))
                         resultat["nye"] += ny
                 if r.get("email") and inviter and ny:
                     with db.db() as c:

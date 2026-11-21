@@ -32,7 +32,9 @@ def opgoerelse_csv(maaned):
 # ---------------------------------------------------------------- brugermails
 
 def _maaler_linje(t):
-    return f"Måler {t['maaler_id']:03d}" + (f" ({t['placering']})" if t["placering"] else "")
+    navn = f"Måler {t['maaler_id']:03d}" + (f" ({t['placering']})" if t["placering"] else "")
+    baad = t["baad"] if "baad" in t.keys() else ""
+    return f"{baad} – {navn}" if baad else navn
 
 
 def bruger_dag(c, bruger, tild, dato):

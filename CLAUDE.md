@@ -38,6 +38,9 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 - **Tid:** UTC epoch i DB, perioder beregnes i Europe/Copenhagen (`tid.py`).
 - **Tildelinger:** `tildelinger(start_dato, slut_dato)`; slut er *eksklusiv* ("ophørt pr."). Ny tildeling
   på en måler afslutter automatisk den aktive pr. samme dato.
+- **Både:** en bruger kan have flere både. Båden står på tildelingen (`tildelinger.baad`, kopieres til
+  `maanedsopgoerelser.baad` ved låsning) – ikke på brugeren (`brugere.baad` er forældet, kun brugt ved migrering).
+  Vinter-CSV har én linje pr. bruger og båd. `demodata.py` (`python -m app.demodata`) laver demo-brugere.
 - **Forbrugsgrupper** (fra klubmeddelelsen "Sådan afregnes vinterstrøm", nov–mar):
   0–20 kWh 0 kr · 21–100 120 kr · 101–300 400 kr · 301–700 1000 kr · 701–1500 2200 kr · over 1500 4500 kr.
   Månedsforbrug afrundes til hele kWh før placering. Opgøres pr. måler/tildeling (pr. båd), ikke pr. bruger.

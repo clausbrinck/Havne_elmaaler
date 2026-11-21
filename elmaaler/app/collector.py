@@ -96,6 +96,13 @@ class Simulator:
             profil = ("tom" if p < .15 else "lille" if p < .45 else "affugter" if p < .8 else "varme")
             self.m[nr] = {"profil": profil, "energi": rnd.uniform(0, 400), "offline": False,
                           "lqi": rnd.randint(20, 220)}
+        # fortsæt fra sidst gemte tællerstand, så en genstart ikke ligner en tæller-nulstilling
+        with db.db() as c:
+            for r in c.execute("SELECT a.maaler_id, a.energi_kwh FROM aflaesninger a JOIN "
+                               "(SELECT maaler_id, MAX(ts) ts FROM aflaesninger GROUP BY maaler_id) s "
+                               "ON s.maaler_id=a.maaler_id AND s.ts=a.ts"):
+                if r[0] in self.m:
+                    self.m[r[0]]["energi"] = r[1]
         self.t = time.time()
 
     @staticmethod

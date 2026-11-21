@@ -137,7 +137,7 @@ def beregn_maaned(maaned: str, live=True):
     rows = []
     with db.db() as c:
         tild = c.execute(
-            "SELECT t.*, b.navn, b.email, b.baad, m.placering FROM tildelinger t "
+            "SELECT t.*, b.navn, b.email, m.placering FROM tildelinger t "
             "JOIN brugere b ON b.id=t.bruger_id JOIN maalere m ON m.id=t.maaler_id "
             "WHERE t.start_ts < ? AND (t.slut_ts IS NULL OR t.slut_ts > ?)", (til, fra)).fetchall()
         daekket = defaultdict(list)
@@ -173,9 +173,10 @@ def laas_maaned(maaned: str):
     with db.db() as c:
         c.execute("DELETE FROM maanedsopgoerelser WHERE maaned=?", (maaned,))
         for r in rows:
-            c.execute("INSERT INTO maanedsopgoerelser VALUES (?,?,?,?,?,?,?,?,?)",
+            c.execute("INSERT INTO maanedsopgoerelser(maaned, maaler_id, bruger_id, fra_dato, til_dato, kwh, "
+                      "gruppe, pris, beregnet, baad) VALUES (?,?,?,?,?,?,?,?,?,?)",
                       (maaned, r["maaler_id"], r["bruger_id"], r["fra"], r["til"], r["kwh"],
-                       r["gruppe"], r["pris"], nu()))
+                       r["gruppe"], r["pris"], nu(), r["baad"]))
     db.log("opgørelse", f"Opgørelse for {maaned} låst ({len(rows)} rækker)")
     return rows
 
@@ -189,7 +190,7 @@ def maanedsopgoerelse(maaned: str):
     """Låst opgørelse hvis den findes, ellers live-beregning."""
     with db.db() as c:
         gemt = c.execute(
-            "SELECT o.*, b.navn, b.email, b.baad, m.placering FROM maanedsopgoerelser o "
+            "SELECT o.*, b.navn, b.email, m.placering FROM maanedsopgoerelser o "
             "LEFT JOIN brugere b ON b.id=o.bruger_id JOIN maalere m ON m.id=o.maaler_id "
             "WHERE o.maaned=?", (maaned,)).fetchall()
     if not gemt:
