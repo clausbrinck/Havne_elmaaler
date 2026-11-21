@@ -261,6 +261,8 @@ def mine_emails():
     with db.db() as c:
         c.execute(f"UPDATE brugere SET {', '.join(f + '=?' for f in felter)} WHERE id=?",
                   (*[1 if request.form.get(f) else 0 for f in felter], g.bruger["id"]))
+    if request.headers.get("X-Autogem"):          # gemt automatisk fra Min side (app.js)
+        return jsonify(ok=True)
     flash("Dine e-mail-valg er gemt.", "ok")
     return redirect(url_for("min_side"))
 

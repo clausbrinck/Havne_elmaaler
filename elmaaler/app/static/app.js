@@ -3,6 +3,27 @@
   function dk(x, d) {
     return (x == null ? "–" : Number(x).toLocaleString("da-DK", { minimumFractionDigits: d, maximumFractionDigits: d }));
   }
+  // Ampere (ca., ved 230 V) af standerens 16 A og en forklaring i almindelige ord
+  function effektInfo(el, w) {
+    el.innerHTML = "";
+    if (w == null || w === "" || isNaN(w)) return;
+    w = Number(w);
+    var a = w / 230, pct = Math.min(a / 16 * 100, 100);
+    var tekst = w < 5 ? "Intet er tændt lige nu" :
+      w < 60 ? "Meget lille – fx lader eller lys" :
+      w < 300 ? "Lille – fx køleskab eller lille affugter" :
+      w < 800 ? "Middel – fx affugter eller frostvagt" :
+      w < 2000 ? "Stort – fx varmeblæser" :
+      w < 3000 ? "Meget stort – fx varmeblæser på fuldt blus" : "Tæt på sikringens grænse!";
+    var amp = document.createElement("div"); amp.className = "amp";
+    amp.textContent = "ca. " + dk(a, 1) + " A af 16 A";
+    var bar = document.createElement("div"); bar.className = "bar lille" + (pct >= 75 ? " adv" : "");
+    var fyld = document.createElement("div"); fyld.style.width = pct + "%"; bar.appendChild(fyld);
+    var t = document.createElement("div"); t.className = "forklaring"; t.textContent = tekst;
+    el.appendChild(amp); el.appendChild(bar); el.appendChild(t);
+  }
+  document.querySelectorAll("[data-effekt-info]").forEach(function (el) { effektInfo(el, el.getAttribute("data-w")); });
+
   var live = document.querySelector("[data-live]");
   if (live) {
     var url = live.getAttribute("data-live");
@@ -13,6 +34,9 @@
           var m = j.maalere[id];
           document.querySelectorAll('[data-effekt="' + id + '"]').forEach(function (el) {
             el.textContent = m.online ? dk(m.effekt, 0) : "–";
+          });
+          document.querySelectorAll('[data-effekt-info="' + id + '"]').forEach(function (el) {
+            effektInfo(el, m.online ? m.effekt : null);
           });
           document.querySelectorAll('[data-status="' + id + '"]').forEach(function (el) {
             el.className = "badge " + (m.online ? "online" : "offline");
@@ -53,6 +77,10 @@
   var NS = "http://www.w3.org/2000/svg";
   function dk(x, d) {
     return Number(x).toLocaleString("da-DK", { minimumFractionDigits: d, maximumFractionDigits: d });
+  }
+  function paen(x) {
+    var e = Math.pow(10, Math.floor(Math.log10(x))), f = x / e;
+    return [1, 2, 2.5, 5, 10].filter(function (s) { return s >= f - 1e-9; })[0] * e;
   }
   function kwh(v) { return dk(v, v >= 100 ? 0 : v >= 10 ? 1 : 2) + " kWh"; }
   function lav(navn, attr, tekst) {
@@ -99,16 +127,22 @@
       $('[data-gaa="naeste"]').disabled = !data.naeste;
       $('[data-gaa="nu"]').hidden = data.er_nu;
 
-      W = bredde();
+      W = sidstBredde = bredde();
       var p = data.punkter, n = Math.max(p.length, 1);
-      var maks = Math.max.apply(null, p.map(function (x) { return x.v; }).concat([0.1]));
+      // pæn skala (1-2-2,5-5-10) med et minimum, så en tom eller lille graf ikke ser forkert ud
+      var mindst = { dag: 0.5, uge: 2, maaned: 2, vinter: 20 }[visning] || 1;
+      var maks = paen(Math.max.apply(null, p.map(function (x) { return x.v; }).concat([mindst])));
+      var halv = maks / 2, dec = halv % 1 === 0 ? 0 : (halv * 10) % 1 === 0 ? 1 : 2;
       var bw = (W - VENSTRE) / n, hoejde = H - TOP - BUND;
       var svg = lav("svg", { "class": "graf", viewBox: "0 0 " + W + " " + H, role: "img" });
       [0, 0.5, 1].forEach(function (f) {
         var y = TOP + hoejde * (1 - f);
         svg.appendChild(lav("line", { "class": "akse", x1: VENSTRE, x2: W, y1: y, y2: y }));
-        svg.appendChild(lav("text", { x: VENSTRE - 4, y: y + 3, "text-anchor": "end" }, dk(maks * f, maks >= 10 ? 0 : 1)));
+        svg.appendChild(lav("text", { x: VENSTRE - 4, y: y + 3, "text-anchor": "end" }, dk(maks * f, dec)));
       });
+      if (!data.total)
+        svg.appendChild(lav("text", { "class": "tom", x: VENSTRE + (W - VENSTRE) / 2, y: TOP + hoejde / 2, "text-anchor": "middle" },
+          "Intet forbrug i perioden"));
       p.forEach(function (pt, i) {
         var bh = Math.max(hoejde * pt.v / maks, pt.v > 0 ? 1 : 0);
         svg.appendChild(lav("rect", { "class": "s" + (pt.nu ? " nu" : ""), "data-i": i, x: VENSTRE + i * bw + bw * 0.15,
@@ -198,6 +232,56 @@
   document.querySelectorAll("label.valg input[type=checkbox]").forEach(function (c) {
     c.addEventListener("change", function () {
       c.parentNode.querySelector(".til-fra").textContent = c.checked ? "Til" : "Fra";
+    });
+  });
+})();
+
+// Faner mellem bådene på Min side (kun når man har flere målere) og automatisk gem af e-mail-valg.
+(function () {
+  var faner = document.querySelector(".baad-faner");
+  if (faner) {
+    var knapper = faner.querySelectorAll("[data-fane]");
+    function vaelg(id) {
+      knapper.forEach(function (b) {
+        var valgt = b.getAttribute("data-fane") === id;
+        b.classList.toggle("aktiv", valgt);
+        b.setAttribute("aria-selected", valgt);
+      });
+      document.querySelectorAll("[data-fane-indhold]").forEach(function (k) {
+        k.hidden = k.getAttribute("data-fane-indhold") !== id;
+      });
+      try { localStorage.setItem("elmaaler-fane", id); } catch (e) {}
+      window.dispatchEvent(new Event("resize"));     // grafen i den viste fane tegnes i rigtig bredde
+    }
+    knapper.forEach(function (b) {
+      b.addEventListener("click", function () { vaelg(b.getAttribute("data-fane")); });
+    });
+    var gemt = null;
+    try { gemt = localStorage.getItem("elmaaler-fane"); } catch (e) {}
+    var findes = gemt && faner.querySelector('[data-fane="' + gemt + '"]');
+    faner.hidden = false;
+    vaelg(findes ? gemt : knapper[0].getAttribute("data-fane"));
+  }
+
+  document.querySelectorAll("form[data-autogem]").forEach(function (form) {
+    var knap = form.querySelector("[data-gem-knap]"), skilt = document.querySelector("[data-gemt]"), timer = null;
+    if (knap) knap.hidden = true;
+    form.addEventListener("change", function () {
+      fetch(form.action, { method: "POST", body: new FormData(form), credentials: "same-origin",
+                           headers: { "X-Autogem": "1" } })
+        .then(function (r) {
+          if (!r.ok) throw new Error();
+          skilt.textContent = "Gemt ✓"; skilt.className = "gemt";
+        })
+        .catch(function () {
+          skilt.textContent = "Kunne ikke gemme – prøv igen"; skilt.className = "gemt fejl";
+          if (knap) knap.hidden = false;
+        })
+        .then(function () {
+          skilt.hidden = false;
+          clearTimeout(timer);
+          timer = setTimeout(function () { skilt.hidden = true; }, 2500);
+        });
     });
   });
 })();

@@ -8,7 +8,7 @@
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--tekst); background: var(--sand); }
 a { color: var(--hav2); }
-header.top { background: var(--hav); color: #fff; }
+header.top { background: linear-gradient(180deg, #0d4269, var(--hav)); color: #fff; box-shadow: 0 2px 8px rgba(11,58,91,.25); }
 header.top .indre { max-width: 1200px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
 header.top .logo { font-weight: 700; font-size: 17px; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 8px; }
 header.top nav { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; }
@@ -20,10 +20,10 @@ main { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
 h1 { font-size: 24px; margin: 4px 0 16px; color: var(--hav); }
 h2 { font-size: 18px; margin: 0 0 12px; color: var(--hav); }
 h3 { font-size: 15px; margin: 14px 0 8px; }
-.kort { background: var(--kort); border: 1px solid var(--linje); border-radius: var(--r); padding: 18px; margin-bottom: 18px; }
+.kort { background: var(--kort); border: 1px solid var(--linje); border-radius: var(--r); padding: 18px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(16,40,60,.06); }
 .gitter { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 18px; }
 .gitter2 { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
-.tal { background: var(--kort); border: 1px solid var(--linje); border-radius: var(--r); padding: 14px 16px; }
+.tal { background: var(--kort); border: 1px solid var(--linje); border-radius: var(--r); padding: 14px 16px; box-shadow: 0 1px 3px rgba(16,40,60,.05); }
 .tal .v { font-size: 26px; font-weight: 700; color: var(--hav); line-height: 1.2; }
 .tal .v small { font-size: 14px; font-weight: 500; color: var(--graa); }
 .tal .l { font-size: 13px; color: var(--graa); }
@@ -61,7 +61,9 @@ button.lille, .knap.lille { padding: 3px 10px; font-size: 13px; }
 header.top button { background: transparent; border-color: rgba(255,255,255,.4); padding: 4px 12px; font-size: 13px; }
 .muted { color: var(--graa); font-size: 13px; }
 .hoejre { text-align: right; }
-.login-boks { max-width: 380px; margin: 60px auto; }
+.login-boks { max-width: 380px; margin: 50px auto; text-align: center; }
+.login-boks form, .login-boks .felt { text-align: left; }
+.login-logo { display: block; margin: 0 auto 6px; width: 112px; height: 112px; border-radius: 50%; box-shadow: 0 2px 10px rgba(11,58,91,.18); }
 .maaler-hoved { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .stor-effekt { font-size: 40px; font-weight: 700; color: var(--hav); line-height: 1; }
 .stor-effekt small { font-size: 16px; color: var(--graa); font-weight: 500; }
@@ -140,3 +142,36 @@ label.valg .muted { display: block; }
 label.valg .til-fra { font-size: 12px; font-weight: 700; padding: 1px 9px; border-radius: 99px; background: #eef0f2; color: var(--graa); }
 label.valg input:checked ~ .til-fra { background: #e3f4ea; color: var(--ok); }
 label.valg:has(input:checked) { border-color: #bfe3cd; background: #f6fcf8; }
+
+/* logo i menulinjen */
+header.top .logo img { width: 40px; height: 40px; border-radius: 50%; background: #fff; padding: 2px; box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
+header.top .logo span { display: flex; flex-direction: column; line-height: 1.15; }
+header.top .logo small { font-weight: 500; font-size: 12px; color: #a9cbe4; letter-spacing: .04em; text-transform: uppercase; }
+
+/* Min side */
+.samlet .tal { background: var(--sky); border-color: #cfe0ec; }
+.baad-faner { display: flex; gap: 6px; overflow-x: auto; margin: 0 0 12px; padding-bottom: 2px; }
+.baad-faner button { background: #fff; color: var(--hav2); border: 1px solid var(--linje); border-radius: 99px;
+  padding: 7px 16px; white-space: nowrap; display: flex; align-items: center; }
+.baad-faner button.aktiv { background: var(--hav2); color: #fff; border-color: var(--hav2); }
+.baad-faner .prik { margin-right: 7px; }
+.besked { border-radius: 8px; padding: 10px 14px; margin: 10px 0 4px; font-size: 14px; }
+.besked.alarm { background: #fdecea; border: 1px solid #f1c3bd; border-left: 5px solid var(--fejl); color: #7d1f14; }
+.besked.info { background: #eef3f7; border: 1px solid var(--linje); border-left: 5px solid var(--graa); color: var(--tekst); }
+.tal.effekt .amp { font-size: 13px; font-weight: 600; color: var(--hav2); margin-top: 6px; }
+.tal.effekt .forklaring { font-size: 12px; color: var(--graa); }
+.bar.lille { height: 6px; margin: 3px 0 4px; }
+.gruppe-boks { background: #fafbfc; border: 1px solid var(--linje); border-radius: 8px; padding: 10px 14px; margin-bottom: 4px; }
+.gruppe-boks .pris { font-size: 20px; color: var(--hav); }
+tr.min-gruppe td { background: #f0f7fc; font-weight: 600; }
+tr.min-gruppe td:first-child { box-shadow: inset 4px 0 0 var(--hav2); }
+tr.min-gruppe .her { display: inline-block; white-space: nowrap; font-size: 12px; color: var(--hav2); margin-left: 6px; font-weight: 600; }
+.gemt { white-space: nowrap; display: inline-block; font-size: 13px; font-weight: 600; color: var(--ok); background: #e3f4ea; border-radius: 99px; padding: 2px 10px; margin-left: 6px; }
+.gemt.fejl { color: var(--fejl); background: #fbe7e5; }
+svg.graf text.tom { font-size: 13px; fill: var(--graa); }
+@media (max-width: 640px) {
+  header.top .logo img { width: 34px; height: 34px; }
+  .gruppe-boks .pris { font-size: 17px; }
+  .gitter.samlet { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+  .samlet .tal { padding: 8px 10px; } .samlet .tal .v { font-size: 17px; } .samlet .tal .l { font-size: 11px; line-height: 1.3; }
+}

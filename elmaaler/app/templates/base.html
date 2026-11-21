@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block titel %}Elmålere{% endblock %} – {{ klub }}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M18 2 6 18h8l-2 12 12-16h-8z' fill='%230b3a5b'/></svg>">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
+<meta name="theme-color" content="#0b3a5b">
 </head>
 <body>
 <header class="top"><div class="indre">
-  <a class="logo" href="{{ url_for('forside') }}">⚡ {{ klub }} · Elmålere</a>
+  <a class="logo" href="{{ url_for('forside') }}"><img src="{{ url_for('static', filename='logo.png') }}" alt="" width="40" height="40"><span>{{ klub }}<small>Elmålere</small></span></a>
   {% if bruger %}
   <nav>
     {% set ep = request.endpoint or '' %}
