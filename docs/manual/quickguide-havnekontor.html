@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="da"><head><meta charset="utf-8"><title>Quickguide – elmålere for havnekontoret</title>
+<link rel="stylesheet" href="quickguide.css"></head>
+<body>
+<div class="top">
+  <img src="../../elmaaler/app/static/logo.png" alt="">
+  <div class="t"><b>Quickguide – havnekontoret</b><span>De daglige opgaver i elmålersystemet · Aabenraa Sejl Club</span></div>
+</div>
+
+<div class="gitter">
+  <div class="trin bred">
+    <h2><span class="nr">1</span>Tildel en måler til en båd</h2>
+    <div class="side hoej">
+    <img src="billeder/kontor-maaler.png">
+    <div><p style="margin:0 0 2mm">Gå til <b>Overblik</b> → klik på <b>målernummeret</b> (eller søg på stander/udtag, fx <i>S12-U3</i>).</p>
+    <ol class="tal">
+      <li>Vælg et <b>eksisterende medlem</b> …</li>
+      <li>… eller skriv <b>e-mail og navn</b> på et nyt.</li>
+      <li><b>Startdato</b> – forbrug tælles fra kl. 00:00.</li>
+      <li><b>Tildel måler</b>. En tidligere tildeling afsluttes automatisk pr. samme dato.</li>
+      <li><b>Fjern fra bruger</b> pr. en dato, når båden forlader pladsen.</li>
+      <li>Skriv/ret <b>bådens navn</b> – den følger med i afregningen.</li>
+    </ol></div></div>
+  </div>
+
+  <div class="trin">
+    <h2><span class="nr">2</span>Opret et medlem</h2>
+    <ul>
+      <li><b>Brugere</b> → <b>Opret bruger</b>: e-mail, navn, telefon – og evt. måler og båd med det samme.</li>
+      <li>Sæt flueben ved <b>Send invitation</b>. Medlemmet vælger selv adgangskode via linket (gyldigt i 14 dage).</li>
+      <li>Mange på én gang: <b>Importér fra CSV</b> (Excel → <i>CSV UTF-8</i>). Kun kolonnen <code>maaler</code> er påkrævet.</li>
+    </ul>
+    <div class="boks blaa"><b>Flere både?</b> Tildel én måler pr. båd til samme medlem. Hver båd afregnes for sig.</div>
+  </div>
+
+  <div class="trin">
+    <h2><span class="nr">3</span>Hjælp et medlem</h2>
+    <ul>
+      <li><b>Brugere</b> → søg → klik på navnet.</li>
+      <li><b>Kan ikke logge ind:</b> <i>Send nulstil-link</i> eller <i>Send invitation</i> – eller sæt en adgangskode direkte.</li>
+      <li><b>Forkert e-mail:</b> ret den under <i>Oplysninger</i>.</li>
+      <li><b>Ser ikke sin båd:</b> tjek at måleren er tildelt med den rigtige startdato.</li>
+      <li><b>Måler offline:</b> stik eller strøm på standeren – tjek <i>Overblik</i>.</li>
+    </ul>
+  </div>
+
+  <div class="trin bred">
+    <h2><span class="nr">4</span>Ryd op: målere der ikke er i brug</h2>
+    <div class="side stor">
+    <img src="billeder/kontor-ubrugte.png">
+    <ol class="tal">
+      <li>Antal <b>dage</b> uden forbrug …</li>
+      <li>… og <b>grænse i kWh</b>.</li>
+      <li><b>Vælg alle</b> – eller enkelte målere.</li>
+      <li><b>Fjern valgte</b> pr. en dato. Historik og opgørelser bevares.</li>
+    </ol></div>
+  </div>
+</div>
+
+<div class="sideskift"></div>
+<div class="gitter">
+  <div class="trin bred">
+    <h2><span class="nr">5</span>Månedsopgørelse og afregning</h2>
+    <div class="side stor">
+    <img src="billeder/kontor-opgoerelse.png">
+    <ol class="tal">
+      <li><b>Vælg måned.</b></li>
+      <li><b>Hent CSV (Excel)</b> – én linje pr. måler/båd med kWh, gruppe og pris.</li>
+      <li><b>Hele vinterperioden pr. bruger</b> – samlet opkrævning nov–mar til standerhejsning.</li>
+      <li><b>Genberegn</b> efter rettelser (måneden låses selv den 1. kl. 00:20).</li>
+      <li><b>Søg</b> i rækkerne.</li>
+    </ol></div>
+    <div class="boks gul"><b>Rækker med "(ikke tildelt)"</b> = forbrug på en måler uden båd. Tildel måleren pr. den rigtige startdato og tryk <i>Genberegn</i> – ellers kan forbruget ikke opkræves.</div>
+  </div>
+
+  <div class="trin">
+    <h2><span class="nr">6</span>Bestyrelsens rapport</h2>
+    <ul>
+      <li>Sendes <b>automatisk den 1.</b> for november–marts som PDF til bestyrelsen.</li>
+      <li>Kan altid hentes under <b>Opgørelse → Månedsrapport (PDF)</b>.</li>
+    </ul>
+    <h2 style="margin-top:4mm"><span class="nr">7</span>Dine egne mails</h2>
+    <ul>
+      <li><b>Konto Administration</b> → <i>Mine havnekontor-e-mails</i>: målere uden forbindelse, døgn, uge og måned.</li>
+    </ul>
+  </div>
+
+  <div class="trin">
+    <h2><span class="nr">8</span>Årshjul</h2>
+    <table>
+      <thead><tr><th style="width:34%">Hvornår</th><th>Opgave</th></tr></thead>
+      <tbody>
+        <tr><td>Oktober</td><td>Tjek vinterliggernes måler og båd. Ryd op i ubrugte målere.</td></tr>
+        <tr><td>Hver måned nov–mar</td><td>Se opgørelsen for <i>(ikke tildelt)</i>-rækker.</td></tr>
+        <tr><td>Den 1. (automatisk)</td><td>Måneden låses, mails og bestyrelsesrapport sendes.</td></tr>
+        <tr><td>April</td><td>Hent <i>Hele vinterperioden pr. bruger</i> til opkrævning.</td></tr>
+        <tr><td>Når en båd rejser</td><td><i>Fjern fra bruger</i> pr. datoen – slet aldrig.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="trin bred">
+    <h2><span class="nr">9</span>Husk</h2>
+    <ul style="columns:2;column-gap:8mm">
+      <li><b>Fjern</b> en måler pr. dato – <b>slet</b> aldrig en tildeling (så forsvinder forbruget).</li>
+      <li>Startdato og slutdato gælder fra <b>kl. 00:00</b>.</li>
+      <li>Du kan ikke give rollen <i>admin</i> eller ændre en systemadministrators konto.</li>
+      <li>Placering, priser og forbrugsgrupper ændres af <b>systemadministratoren</b>.</li>
+      <li>Rød advarsel om <b>simuleret forbrug</b>? Kontakt systemadministratoren.</li>
+      <li>Tekniske fejl (mange målere offline, ingen data): kontakt <b>systemadministratoren</b>.</li>
+    </ul>
+  </div>
+</div>
+<div class="fod">Mere hjælp: Manual for havnekontoret (Manual-havnekontor.pdf).</div>
+</body></html>

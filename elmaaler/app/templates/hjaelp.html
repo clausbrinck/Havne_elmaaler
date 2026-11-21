@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titel %}Hjælp{% endblock %}
+{% block indhold %}
+<h1>Hjælp og manualer</h1>
+<div class="hjaelp-liste">
+  {% for fil, titel, tekst, hvem in dokumenter %}
+  <a class="kort hjaelp" href="{{ url_for('hjaelp_fil', navn=fil) }}" target="_blank">
+    <span class="ikon">{{ '⚡' if fil.startswith('Quickguide') else '📘' }}</span>
+    <span><strong>{{ titel }}</strong><span class="muted">{{ tekst }}</span></span>
+    <span class="pdf">PDF</span>
+  </a>
+  {% endfor %}
+</div>
+<p class="muted">Manualerne åbner i et nyt vindue og kan gemmes eller printes derfra.
+  {% if not er_kontor %}Har du spørgsmål om din måler, båd eller afregning, så kontakt havnekontoret.{% endif %}</p>
+{% endblock %}

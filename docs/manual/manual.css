@@ -1,0 +1,57 @@
+@page { size: A4; margin: 16mm 16mm 18mm 16mm; }
+* { box-sizing: border-box; }
+body { margin: 0; font: 10.2pt/1.5 "Segoe UI", Arial, sans-serif; color: #1d2733; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+h1, h2, h3 { color: #0b3a5b; line-height: 1.2; }
+h1 { font-size: 22pt; margin: 0 0 4mm; padding: 0 0 3mm; border-bottom: 3px solid #0b3a5b; break-before: page; display: flex; align-items: center; gap: 4mm; }
+h1 .nr { display: inline-flex; width: 13mm; height: 13mm; border-radius: 50%; background: #0b3a5b; color: #fff; font-size: 17pt; align-items: center; justify-content: center; flex: none; }
+h1 small { display: block; font-size: 10pt; color: #6b7785; font-weight: 500; margin-top: 1mm; }
+h2 { font-size: 14pt; margin: 7mm 0 2mm; break-after: avoid; }
+h3 { font-size: 11pt; margin: 5mm 0 1.5mm; break-after: avoid; }
+p { margin: 0 0 2.5mm; }
+ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+li { margin-bottom: 1mm; }
+a { color: #13557f; }
+code { background: #eef2f5; padding: 0 4px; border-radius: 3px; font-size: 9pt; }
+.forside { height: 255mm; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.forside img { width: 70mm; height: 70mm; margin-bottom: 10mm; }
+.forside .titel { font-size: 34pt; font-weight: 700; color: #0b3a5b; line-height: 1.1; }
+.forside .under { font-size: 14pt; color: #6b7785; margin-top: 4mm; }
+.forside .version { margin-top: 30mm; font-size: 10pt; color: #6b7785; }
+.indhold { break-before: page; }
+.indhold h2 { margin-top: 0; font-size: 18pt; border-bottom: 3px solid #0b3a5b; padding-bottom: 3mm; }
+.indhold ol { list-style: none; padding: 0; }
+.indhold > ol > li { margin: 4mm 0 1mm; font-weight: 600; font-size: 11.5pt; color: #0b3a5b; }
+.indhold li li { font-weight: 400; font-size: 10pt; color: #1d2733; margin: .6mm 0 .6mm 8mm; }
+.indhold .hvem { font-weight: 400; font-size: 9pt; color: #6b7785; }
+.billede { display: flex; gap: 6mm; align-items: flex-start; margin: 3mm 0 5mm; break-inside: avoid; }
+.billede img { border: 1px solid #cfd8e0; border-radius: 6px; box-shadow: 0 1px 5px rgba(16,40,60,.12); display: block; }
+.billede.mobil img { width: 68mm; flex: none; }
+.billede.bred { display: block; }
+.billede.bred img { width: 100%; }
+.billede.bred ol.tal { margin-top: 3mm; columns: 2; column-gap: 8mm; }
+.billede.mellem img { width: 120mm; }
+ol.tal { list-style: none; padding: 0; margin: 0; counter-reset: n; }
+ol.tal li { position: relative; padding-left: 9mm; margin-bottom: 2.2mm; break-inside: avoid; }
+ol.tal li::before { counter-increment: n; content: counter(n); position: absolute; left: 0; top: .2mm; width: 6.2mm; height: 6.2mm;
+  border-radius: 50%; background: #e4572e; color: #fff; font-weight: 700; font-size: 9pt; line-height: 6.2mm; text-align: center; }
+ol.tal li b { color: #0b3a5b; }
+.tip, .vigtigt, .info { border-radius: 6px; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; font-size: 9.6pt; }
+.tip { background: #effaf3; border-left: 4px solid #1f8a4c; }
+.vigtigt { background: #fff8ea; border-left: 4px solid #c77d00; }
+.info { background: #eef4f9; border-left: 4px solid #13557f; }
+.tip b:first-child, .vigtigt b:first-child, .info b:first-child { display: block; margin-bottom: .5mm; }
+table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 9.4pt; break-inside: avoid; }
+th { text-align: left; font-size: 8pt; text-transform: uppercase; letter-spacing: .03em; color: #6b7785; border-bottom: 1.5px solid #0b3a5b; padding: 1.5mm 2mm; }
+td { padding: 1.5mm 2mm; border-bottom: 1px solid #e3e8ed; vertical-align: top; }
+.n { text-align: right; white-space: nowrap; }
+.badge { display: inline-block; padding: 0 2mm; border-radius: 99px; font-size: 8.5pt; font-weight: 600; }
+.g1 { background: #e3f4ea; color: #17663a; } .g2 { background: #e7f0f9; color: #1c4f7d; } .g3 { background: #fff4d6; color: #8a5a00; }
+.g4 { background: #ffe6cc; color: #994800; } .g5 { background: #fbe0dc; color: #9a2a1c; } .g6 { background: #f2d7ef; color: #7a1f6f; }
+.rolle { display: inline-block; padding: 0 2mm; border-radius: 99px; font-size: 8.5pt; font-weight: 700; color: #fff; }
+.r-b { background: #6b7785; } .r-k { background: #0b3a5b; } .r-a { background: #5b2a86; }
+.trin { counter-reset: t; list-style: none; padding: 0; }
+.trin > li { position: relative; padding-left: 9mm; margin-bottom: 2mm; }
+.trin > li::before { counter-increment: t; content: counter(t); position: absolute; left: 0; width: 6.2mm; height: 6.2mm; border-radius: 50%;
+  border: 1.5px solid #0b3a5b; color: #0b3a5b; font-weight: 700; font-size: 9pt; line-height: 5.9mm; text-align: center; }
+.qa h3 { color: #1d2733; }
+.sammen { break-inside: avoid; }

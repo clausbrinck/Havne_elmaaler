@@ -201,9 +201,10 @@ def pdf(d):
             return self.bredde, 9
 
         def draw(self):
-            lang = max((self.bredde - 12 * mm) * self.frac, 1.5)
+            lang = (self.bredde - 12 * mm) * self.frac
             self.canv.setFillColor(BLAA)
-            self.canv.roundRect(0, 2, lang, 5, 2.5, stroke=0, fill=1)
+            if lang >= 5:
+                self.canv.roundRect(0, 2, lang, 5, 2.5, stroke=0, fill=1)
             self.canv.setFillColor(GRAA)
             self.canv.setFont("Helvetica", 7)
             self.canv.drawString(lang + 3, 2.3, self.tekst)

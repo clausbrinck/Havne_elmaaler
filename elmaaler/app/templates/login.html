@@ -11,6 +11,7 @@
     <div class="felt"><label for="kode">Adgangskode</label><input type="password" id="kode" name="kode" autocomplete="current-password" required></div>
     <button style="width:100%">Log ind</button>
   </form>
-  <p class="muted" style="margin-top:14px"><a href="{{ url_for('glemt') }}">Glemt adgangskode?</a></p>
+  <p class="muted" style="margin-top:14px"><a href="{{ url_for('glemt') }}">Glemt adgangskode?</a> ·
+    <a href="{{ url_for('hjaelp_fil', navn='Quickguide-medlem.pdf') }}" target="_blank">Hjælp til at komme i gang</a></p>
 </div>
 {% endblock %}

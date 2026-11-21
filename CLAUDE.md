@@ -30,7 +30,7 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
 | `forbrug.py` | forbrugsberegning, forbrugsgrupper, månedsopgørelser |
 | `perioder.py` | data til periode-grafen (`/api/forbrug`): døgn pr. time, uge/måned pr. dag, vinter pr. måned |
 | `rapport.py` | CSV-udtræk og mailtekster |
-| `web.py` | alle routes: Min side (bruger), `/kontor/...` (havnekontor), `/system/...` (admin) |
+| `web.py` | alle routes: Min side (bruger), `/kontor/...` (havnekontor), `/system/...` (admin), `/hjaelp` (manualer efter rolle) |
 | `simulering.py`, `vedligehold.py` | debug-simuleret forbrug; DB-info, VACUUM, integritetstjek, nulstil fejlmålt forbrug |
 | `bestyrelse.py` | PDF-månedsrapport til bestyrelsen (reportlab): `data(m)` + `pdf(d)`; sendes den 1. for nov–mar til indstillingen `bestyrelse_emails`; eksempler i `docs/eksempler/` |
 | `backup.py` | natlig backup (SQLite backup-API + gzip); daglige gemmes `BACKUP_KEEP_DAYS`, den 1. i måneden 13 mdr.; krypteret kopi til OneDrive med rclone (`BACKUP_RCLONE_REMOTE=krypt:`, config i `/data/rclone/rclone.conf`) – altid `rclone copy`, aldrig `sync` |
@@ -97,3 +97,11 @@ og mod en falsk Home Assistant. Endnu ikke kørt mod rigtig Home Assistant eller
 
 Mulige næste skridt: pilot med 6 målere · HTTPS/adgang udefra (Cloudflare Tunnel) · udtynding af gamle
 aflæsninger efter 2 år · relæ-målere (Shelly 1PM) hvis udtag skal kunne slukkes.
+
+## Manualer
+
+Tre manualer (medlem, havnekontor, administration) og to quickguides (medlem, havnekontor) som PDF i
+`elmaaler/app/hjaelp/` – vises på websiden under **Hjælp** efter rolle (`HJAELP` i `web.py`; medlemmernes kan åbnes uden
+login, fx fra login-siden). Kilde i `docs/manual/` (`manual-*.html`, `quickguide-*.html`, `billeder/`). Billeder tages
+automatisk fra et lokalt testsystem (`testdata.py`, `testsystem.py`, `skaermbilleder.py`), og PDF'erne bygges med
+`byg.py` via Edge – se `docs/manual/laes-mig.md`. Ændres UI'et, så tag billederne igen og byg.

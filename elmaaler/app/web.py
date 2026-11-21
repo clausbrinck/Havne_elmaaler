@@ -241,6 +241,44 @@ def _maaler_kort(c, t, maaned):
     }
 
 
+# ---------------------------------------------------------------- hjælp (manualer som PDF)
+
+HJAELP_MAPPE = os.path.join(os.path.dirname(__file__), "hjaelp")
+# fil, titel, beskrivelse, hvem der må se den: "alle" (også uden login), "kontor" eller "admin"
+HJAELP = [
+    ("Quickguide-medlem.pdf", "Quickguide for medlemmer", "De vigtigste ting på 2 sider – god at printe.", "alle"),
+    ("Manual-medlem.pdf", "Manual for medlemmer", "Log ind, Min side, grafer, e-mails og forbrugsrapport.", "alle"),
+    ("Quickguide-havnekontor.pdf", "Quickguide for havnekontoret", "De daglige opgaver på 2 sider.", "kontor"),
+    ("Manual-havnekontor.pdf", "Manual for havnekontoret",
+     "Tildel og fjern målere, brugere, import, opgørelse og afregning.", "kontor"),
+    ("Manual-administration.pdf", "Manual for administration",
+     "Menuen System, backup, indstillinger og drift.", "admin"),
+]
+
+
+def _hjaelp_til(b):
+    """De hjælpedokumenter, brugeren b må se (b=None: ikke logget ind)."""
+    def maa(hvem):
+        return hvem == "alle" or (hvem == "kontor" and er_kontor(b)) or (hvem == "admin" and er_admin(b))
+    return [h for h in HJAELP if maa(h[3]) and os.path.exists(os.path.join(HJAELP_MAPPE, h[0]))]
+
+
+@app.route("/hjaelp")
+@login_kraevet
+def hjaelp():
+    return render_template("hjaelp.html", dokumenter=_hjaelp_til(g.bruger))
+
+
+@app.route("/hjaelp/<navn>")
+def hjaelp_fil(navn):
+    """Medlemmernes manual og quickguide kan åbnes uden login (fx fra login-siden)."""
+    if navn not in {h[0] for h in _hjaelp_til(g.bruger)}:
+        if not g.bruger:
+            return redirect(url_for("login", next=request.path))
+        abort(403)
+    return send_from_directory(HJAELP_MAPPE, navn, mimetype="application/pdf", as_attachment=False)
+
+
 @app.route("/min-side")
 @login_kraevet
 def min_side():

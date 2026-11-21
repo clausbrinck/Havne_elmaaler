@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="da"><head><meta charset="utf-8"><title>Elmålere – manual for administration</title>
+<link rel="stylesheet" href="manual.css"></head>
+<body>
+
+<div class="forside">
+  <img src="../../elmaaler/app/static/logo.png" alt="">
+  <div class="titel">Elmålere</div>
+  <div class="under">Manual for systemadministration</div>
+  <div class="under" style="font-size:12pt;margin-top:8mm">Aabenraa Sejl Club</div>
+  <div class="version">Version november 2026</div>
+</div>
+
+<div class="indhold">
+  <h2>Indhold</h2>
+  <ol>
+    <li>1 · Roller og adgang
+      <ol><li>De tre slags brugere</li><li>Første systemadministrator</li></ol></li>
+    <li>2 · Menuen System
+      <ol><li>Status og Zigbee-målere</li><li>Systemloggen</li><li>Måleropsætning</li><li>Database og backup</li><li>Nulstil fejlmålt forbrug</li><li>Indstillinger</li><li>Debug (test)</li></ol></li>
+    <li>3 · Månedsrapporten til bestyrelsen
+      <ol></ol></li>
+    <li>4 · Drift og vedligehold
+      <ol><li>Opdatering af systemet</li><li>Backup – det vigtigste</li><li>Automatiske job</li><li>Manualerne på websiden</li><li>Teknisk dokumentation</li></ol></li>
+  </ol>
+</div>
+
+<h1><span class="nr">1</span><div>Roller og adgang</div></h1>
+<h2>De tre slags brugere</h2>
+<table>
+  <thead><tr><th style="width:30%">Bruger</th><th>Kan</th></tr></thead>
+  <tbody>
+    <tr><td><span class="rolle r-b">bruger</span><br>Medlem med båd</td><td>Se eget forbrug på <b>Min side</b>, vælge e-mails, bestille forbrugsrapport, skifte e-mail og adgangskode.</td></tr>
+    <tr><td><span class="rolle r-k">kontor</span><br>Havnekontoret</td><td>Alt det, et medlem kan, plus: se alle målere, oprette og ændre brugere, tildele og fjerne målere, lave månedsopgørelser og hente afregning.</td></tr>
+    <tr><td><span class="rolle r-a">admin</span><br>Systemadministrator</td><td>Alt det, havnekontoret kan, plus menuen <b>System</b>: status, systemlog, måleropsætning, database og backup, indstillinger (forbrugsgrupper, priser, mails) og test.</td></tr>
+  </tbody>
+</table>
+<p>Hvilke menupunkter du ser øverst på siden, afhænger af din rolle. Et medlem ser kun <i>Min side</i> og <i>Konto Administration</i>.</p>
+
+<h2>Første systemadministrator</h2>
+<p>Den e-mail, der står i <code>ADMIN_EMAIL</code> i serverens opsætning (.env), bliver automatisk systemadministrator ved start,
+  hvis der ikke findes nogen. Flere administratorer oprettes under <b>Brugere</b> ved at give rollen <i>admin</i> – det kan kun en
+  systemadministrator.</p>
+<div class="info"><b>Havnekontorets og medlemmernes sider</b>Som systemadministrator har du også menupunkterne <i>Overblik</i>,
+  <i>Brugere</i> og <i>Opgørelse</i>. De er beskrevet i <i>Manual for havnekontoret</i>; Min side i <i>Manual for medlemmer</i>.</div>
+
+<h1><span class="nr">2</span><div>Menuen System<small>For brugere med rollen <span class="rolle r-a">admin</span></small></div></h1>
+<h2>Status og Zigbee-målere</h2>
+<div class="billede bred">
+  <img src="billeder/system-status.png">
+  <ol class="tal">
+    <li><b>System</b> i menuen – kun for systemadministratorer.</li>
+    <li><b>Fanerne:</b> Status, Log, Måleropsætning, Database &amp; backup, Indstillinger og Debug.</li>
+    <li><b>Zigbee-målere:</b> forbindelse og signalstyrke (linkquality) for hver måler. Målere med svagt signal står øverst – flyt evt. en Zigbee-router tættere på.</li>
+  </ol>
+</div>
+
+<h2>Systemloggen</h2>
+<div class="billede bred">
+  <img src="billeder/system-log.png">
+  <ol class="tal">
+    <li><b>Type:</b> fx fejl, backup, mail, måler, bruger, tildeling, opgørelse.</li>
+    <li><b>Søg</b> i teksten, fx et målernummer eller en e-mail.</li>
+  </ol>
+  <p>Alt vigtigt skrives i loggen: logins, ændringer af brugere og tildelinger, afsendte mails, backup, fejl og målere der går offline.</p>
+</div>
+
+<h2>Måleropsætning</h2>
+<div class="billede bred">
+  <img src="billeder/system-maalere.png">
+  <ol class="tal">
+    <li><b>Søg</b> efter måler eller bruger.</li>
+    <li>Ret <b>placering</b> (fx S12-U3), <b>aktiv</b> og <b>note</b> for mange målere på én gang, og tryk <b>Gem ændringer</b>. Inaktive målere giver ikke offline-varsler.</li>
+  </ol>
+</div>
+
+<h2>Database og backup</h2>
+<div class="billede bred">
+  <img src="billeder/system-database.png">
+  <ol class="tal">
+    <li><b>Kopi uden for serveren:</b> grå boks = OneDrive-kopien er i orden (med tidspunkt). Rød boks = der er ingen kopi, eller den seneste fejlede.</li>
+    <li><b>Lav backup nu</b> – fx før en større ændring. <i>Kopiér til skyen nu</i> sender de nyeste backups til OneDrive.</li>
+    <li><b>Hent en backup</b> ved at klikke på den. ★ = månedsbackup (den 1.), som gemmes i 13 måneder. De daglige gemmes i 30 dage.</li>
+  </ol>
+</div>
+<div class="vigtigt"><b>Krypteringskoderne til OneDrive</b>Backupperne i OneDrive er krypterede. Uden de to koder, der blev lavet ved opsætningen, kan de ikke læses. Koderne skal ligge i klubbens password manager eller i pengeskabet. Opsætning: se <i>docs/07-elmaaler-installation.md</i>, afsnittet "Backup i OneDrive".</div>
+
+<h2>Nulstil fejlmålt forbrug</h2>
+<div class="billede bred">
+  <img src="billeder/system-database-nulstil.png">
+  <div><p>Har en måler målt forkert i en periode (fx under en fejl eller en test), kan forbruget i perioden sættes til 0. Tryk først
+    <b>Vis forbrug i perioden</b> for at se, hvad der rammes. Selve nulstillingen kræver, at du skriver <b>JA</b>. Der tages backup
+    først, handlingen logges, og berørte låste måneder genberegnes. Tællerstandene røres ikke.</p></div>
+</div>
+
+<h2>Indstillinger</h2>
+<div class="billede bred">
+  <img src="billeder/system-indstillinger.png">
+  <ol class="tal">
+    <li><b>Ekstra modtagere af havnekontor-mails</b>, fx kassereren.</li>
+    <li><b>Månedsrapport til bestyrelsen</b> – e-mailadresse(r). Tom = ingen rapport.</li>
+    <li><b>Tidspunkt</b> for de faste e-mails, offline-varsel efter X minutter og advarsel ved X % af gruppegrænsen.</li>
+  </ol>
+</div>
+<div class="billede bred">
+  <img src="billeder/system-grupper.png">
+  <ol class="tal">
+    <li>Ret <b>forbrugsgrupper, priser og afregningsmåneder</b> og tryk <b>Gem forbrugsgrupper</b>. Ændringen gælder nye beregninger – allerede låste måneder ændres kun ved genberegning.</li>
+  </ol>
+</div>
+
+<h2>Debug (test)</h2>
+<div class="billede bred">
+  <img src="billeder/system-debug.png">
+  <ol class="tal">
+    <li>Læg <b>simuleret forbrug</b> på en måler for at afprøve fx advarsler og grupper. Så længe der findes simuleret forbrug, vises en rød advarsel på alle sider, e-mails til medlemmer er sat på pause, og bestyrelsesrapporten sendes ikke. <b>Slet altid det simulerede forbrug igen.</b></li>
+  </ol>
+</div>
+
+<h1><span class="nr">3</span><div>Månedsrapporten til bestyrelsen</div></h1>
+<p>Den 1. i hver måned fra december til april får bestyrelsen automatisk en <b>PDF-rapport</b> for den afsluttede vintermåned, sendt til
+  <i>bestyrelse@aabenraa-sejlclub.dk</i>. Den fulde opgørelse pr. båd er vedhæftet som CSV-fil (Excel).</p>
+<div class="billede mellem">
+  <img src="billeder/bestyrelse-rapport.png" style="width:120mm">
+</div>
+<p class="muted" style="font-size:8.5pt;color:#6b7785">Eksempel med opdigtede tal.</p>
+<h3>Side 1 – økonomi og forbrug</h3>
+<ul>
+  <li><b>Nøgletal:</b> samlet forbrug (op/ned i forhold til måneden før), beløb til opkrævning, antal afregnede både og gennemsnit pr. båd.</li>
+  <li><b>Forbrugsgrupper:</b> antal både, andel, kWh og beløb pr. gruppe.</li>
+  <li><b>Forbrug pr. dag</b> for alle målere med gennemsnitslinje.</li>
+  <li><b>Vintersæsonen indtil nu:</b> kWh og opkrævning pr. måned og i alt.</li>
+</ul>
+<h3>Side 2 – detaljer og drift</h3>
+<ul>
+  <li><b>De 10 største forbrug</b> med båd og medlem.</li>
+  <li><b>Drift og datakvalitet:</b> målere online, hvor mange målinger der er modtaget, offline-hændelser, forbindelse til Home Assistant, backup, nye og afsluttede tildelinger, ledige målere.</li>
+  <li><b>Opmærksomhedspunkter:</b> forbrug uden tildelt bruger (kan ikke opkræves), tildelte målere uden forbrug, manglende backup og sæsonafslutning.</li>
+</ul>
+<p>Rapporten kan også hentes når som helst under <b>Opgørelse → Månedsrapport (PDF)</b> af havnekontoret.</p>
+
+<h1><span class="nr">4</span><div>Drift og vedligehold</div></h1>
+
+<h2>Opdatering af systemet</h2>
+<p>Programmet ligger i et Docker-image. Efter en ny version skal imaget altid bygges om – ellers kører serveren videre med den gamle kode:</p>
+<ol class="trin">
+  <li>Hent den nye kode til <code>/opt/stacks/elmaaler/elmaaler/</code> (<code>git pull</code> eller kopiér mappen).</li>
+  <li>Kør <code>cd /opt/stacks/elmaaler &amp;&amp; docker compose up -d --build</code>.</li>
+  <li>Log ind og tjek <b>System → Status</b> og <b>System → Log</b> for fejl.</li>
+</ol>
+<h2>Backup – det vigtigste</h2>
+<ul>
+  <li>Backup tages hver nat kl. 03. Daglige gemmes 30 dage, den 1. i måneden 13 måneder.</li>
+  <li>En krypteret kopi lægges i klubbens OneDrive. Tjek jævnligt, at <b>System → Database &amp; backup</b> viser en grå boks med et nyt tidspunkt.</li>
+  <li>De to krypteringskoder skal ligge i klubbens password manager eller i pengeskabet.</li>
+  <li>Prøv en gendannelse én gang om året på en test-pc.</li>
+</ul>
+<h2>Automatiske job</h2>
+<table>
+  <thead><tr><th style="width:30%">Hvornår</th><th>Hvad</th></tr></thead>
+  <tbody>
+    <tr><td>Hvert 30. sekund</td><td>Henter målinger fra Home Assistant</td></tr>
+    <tr><td>Hvert 15. minut</td><td>Gemmer en aflæsning pr. måler; advarsler om dyrere gruppe</td></tr>
+    <tr><td>Hvert minut</td><td>Tjekker for målere uden forbindelse (varsel efter 60 min)</td></tr>
+    <tr><td>Hver nat kl. 03</td><td>Backup og kopi til OneDrive</td></tr>
+    <tr><td>Hver morgen kl. 06</td><td>Daglige/ugentlige e-mails</td></tr>
+    <tr><td>Den 1. kl. 00:20</td><td>Forrige måned låses</td></tr>
+    <tr><td>Den 1. kl. 06</td><td>Månedsmails; nov–mar PDF-rapport til bestyrelsen</td></tr>
+  </tbody>
+</table>
+<h2>Manualerne på websiden</h2>
+<p>Under <b>Hjælp</b> ser hver bruger de manualer, der passer til rollen: medlemmer ser medlemsmanual og quickguide, havnekontoret også sine egne, og systemadministratoren alle. Manualerne laves om med <code>docs/manual/byg.py</code> (se <code>docs/manual/laes-mig.md</code>) og kommer på serveren ved næste opdatering.</p>
+<h2>Teknisk dokumentation</h2>
+<p>Installation, opsætning af Home Assistant/Zigbee2MQTT, mail, OneDrive-backup og gendannelse står i
+  <code>docs/07-elmaaler-installation.md</code> i projektet på GitHub.</p>
+
+</body></html>
