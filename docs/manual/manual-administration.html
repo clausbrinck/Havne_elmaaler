@@ -396,7 +396,7 @@
     <tr><td><code>sensor.elmaaler_001_lqi</code></td><td>Zigbee-signal. Er slået <b>fra</b> som standard – slå den til, hvis signalet skal ses under System → Status</td></tr>
   </tbody>
 </table>
-<p>Systemet prøver selv begge navne for tællerstanden. Hedder entiteterne noget helt andet, sættes <code>HA_ENERGY_ENTITY</code>, <code>HA_POWER_ENTITY</code> og <code>HA_LQI_ENTITY</code> i <i>.env</i> (flere bud adskilles med komma).</p>
+<p>Systemet finder både <code>sensor.elmaaler_001_…</code> (enheden hedder <code>elmaaler-001</code>) og <code>sensor.elmaaler001_…</code> (enheden hedder <code>Elmaaler001</code>), og begge navne for tællerstanden. Hedder entiteterne noget helt andet, sættes <code>HA_ENERGY_ENTITY</code>, <code>HA_POWER_ENTITY</code> og <code>HA_LQI_ENTITY</code> i <i>.env</i> (flere bud adskilles med komma).</p>
 
 <h3>Adgangstoken til elmåler-systemet</h3>
 <ol class="trin">

@@ -17,6 +17,7 @@ Der skal være mindst:
 | `sensor.elmaaler_001_power` | effekt i W |
 | `sensor.elmaaler_001_lqi` | Zigbee-signal (valgfri – er **deaktiveret** som standard i ZHA; aktivér den, hvis du vil se signal) |
 
+Enheden må også hedde `Elmaaler001` (så hedder entiteterne `sensor.elmaaler001_…`) – begge dele findes automatisk.
 Hedder de noget andet, sættes mønstrene `HA_ENERGY_ENTITY` osv. i `.env` (flere bud adskilles med komma).
 
 **Vigtigt – offline-tid i ZHA:** ZHA melder som standard først en netforsynet måler *utilgængelig* efter
