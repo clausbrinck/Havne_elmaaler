@@ -8,6 +8,9 @@
 <div class="gitter">
   <div class="tal"><div class="v">{{ gr.status('online' if m.tilgaengelig else ('offline' if m.sidst_set else 'ukendt')) }}</div><div class="l">Sidst set {{ m.sidst_set | siden }}{% if m.offline_siden %} · offline siden {{ m.offline_siden | tid }}{% endif %}</div></div>
   <div class="tal"><div class="v">{{ m.effekt_w | dk(0) if m.tilgaengelig else '–' }} <small>W</small></div><div class="l">Aktuel effekt</div></div>
+  <div class="tal"><div class="v">{{ m.strom_a | dk(2) if m.tilgaengelig and m.strom_a is not none else '–' }} <small>A</small></div><div class="l">Strøm (af 16 A)</div></div>
+  <div class="tal"><div class="v">{{ m.spaending_v | dk(1) if m.tilgaengelig and m.spaending_v is not none else '–' }} <small>V</small></div><div class="l">Spænding</div></div>
+  <div class="tal"><div class="v">{{ m.frekvens_hz | dk(2) if m.tilgaengelig and m.frekvens_hz is not none else '–' }} <small>Hz</small></div><div class="l">Frekvens</div></div>
   <div class="tal"><div class="v">{{ kwh | dk(1) }} <small>kWh</small></div><div class="l">{{ maaned | maaned_navn }} · {{ gr.gruppe(kat.gruppe, kat.label) }}</div></div>
   <div class="tal"><div class="v">{{ m.energi_kwh | dk(2) }} <small>kWh</small></div><div class="l">Tællerstand</div></div>
   <div class="tal"><div class="v">{{ gr.lqi(m.linkquality) }}</div><div class="l">Zigbee-signal (linkquality)</div></div>

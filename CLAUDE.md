@@ -66,8 +66,10 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── ZHA (Zigbee Home Automation) ─�
 - **Forbrugsrapport på mail:** Min side → `/min-side/rapport` (`rapport.bruger_periode`), tekst + CSV pr. dag,
   maks 5 pr. bruger pr. time.
 - **Månedslås:** den 1. kl. 00:20 fryses forrige måned i `maanedsopgoerelser`; kan genberegnes manuelt.
-- **Zigbee = ZHA** (ikke Zigbee2MQTT/MQTT – valgt 22-11-2026). Enhed navngives `elmaaler-NNN` i HA; entitetsmønstre i
-  `config.py` har flere bud adskilt med komma (ZHA: `_summation_delivered`/`_power`/`_lqi`, reserve `_energy`/`_linkquality`).
+- **Zigbee = ZHA** (ikke Zigbee2MQTT/MQTT – valgt 22-11-2026). Enhed navngives `ElmaalerNNN` i HA → kun
+  `sensor.elmaalerNNN_summation_delivered/_power/_current/_voltage/_ac_frequency/_lqi` (mønstre i `config.py`, kan overstyres i .env).
+- **Strøm, spænding, frekvens:** gemmes kun som seneste værdi i `status` (`strom_a`, `spaending_v`, `frekvens_hz`), ikke historisk.
+  Vises på Min side (enkel+avanceret, live via `/api/live`), kontoroverblik, måler-siden og System → Status (gns./min/maks V, Hz).
 - **Offline:** bygger på HA-state `unavailable` → ZHA's "betragt netdrevne enheder som utilgængelige efter" bør sættes til ca. 900 s
   (standard 7200 s).
 - **Engangsjob/varsler** dedupliceres via tabel `varsler_sendt` (nøgler som `job:dag:2026-11-21`, `adv:...`).
@@ -110,6 +112,6 @@ aflæsninger efter 2 år · relæ-målere (Shelly 1PM) hvis udtag skal kunne slu
 
 Tre manualer (medlem, havnekontor, administration) og to quickguides (medlem, havnekontor) som PDF i
 `elmaaler/app/hjaelp/` – vises på websiden under **Hjælp** efter rolle (`HJAELP` i `web.py`; medlemmernes kan åbnes uden
-login, fx fra login-siden). Kilde i `docs/manual/` (`manual-*.html`, `quickguide-*.html`, `billeder/`). Administrationsmanualens kapitel 5 er hardware: elmåleren (CEE-adapter med Shelly EM Mini Gen4, `S4EM-001PXCEU16`, fotos `billeder/maaler-*.png`), parring i ZHA (navn `elmaaler-NNN`) og opsætning af Home Assistant. Billeder tages
+login, fx fra login-siden). Kilde i `docs/manual/` (`manual-*.html`, `quickguide-*.html`, `billeder/`). Administrationsmanualens kapitel 5 er hardware: elmåleren (CEE-adapter med Shelly EM Mini Gen4, `S4EM-001PXCEU16`, fotos `billeder/maaler-*.png`), parring i ZHA (navn `ElmaalerNNN`) og opsætning af Home Assistant. Billeder tages
 automatisk fra et lokalt testsystem (`testdata.py`, `testsystem.py`, `skaermbilleder.py`), og PDF'erne bygges med
 `byg.py` via Edge – se `docs/manual/laes-mig.md`. Ændres UI'et, så tag billederne igen og byg.

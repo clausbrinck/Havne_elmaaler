@@ -31,15 +31,14 @@ METER_COUNT = int(_env("METER_COUNT", "200"))
 SOURCE = _env("SOURCE", "homeassistant")
 HA_URL = _env("HA_URL", "http://homeassistant:8123").rstrip("/")
 HA_TOKEN = _env("HA_TOKEN", "")
-# Entitets-navne i Home Assistant (ZHA). Enheden navngives elmaaler-001 (-> sensor.elmaaler_001_…) eller
-# Elmaaler001 (-> sensor.elmaaler001_…) – begge findes. Flere mønstre adskilles med komma; det første, der
-# findes, bruges. {nr:03d} erstattes med 001, 002 …
-_N = ("elmaaler_{nr:03d}", "elmaaler{nr:03d}")
-HA_ENERGY_ENTITY = _env("HA_ENERGY_ENTITY", ",".join(
-    [f"sensor.{n}_summation_delivered" for n in _N] + [f"sensor.{n}_energy" for n in _N]))
-HA_POWER_ENTITY = _env("HA_POWER_ENTITY", ",".join(f"sensor.{n}_power" for n in _N))
-HA_LQI_ENTITY = _env("HA_LQI_ENTITY", ",".join(
-    [f"sensor.{n}_lqi" for n in _N] + [f"sensor.{n}_linkquality" for n in _N]))
+# Entitets-navne i Home Assistant (ZHA). Enheden navngives Elmaaler001, Elmaaler002 … så entiteterne
+# hedder sensor.elmaaler001_… {nr:03d} erstattes med 001, 002 … Flere mønstre kan adskilles med komma.
+HA_ENERGY_ENTITY = _env("HA_ENERGY_ENTITY", "sensor.elmaaler{nr:03d}_summation_delivered")
+HA_POWER_ENTITY = _env("HA_POWER_ENTITY", "sensor.elmaaler{nr:03d}_power")
+HA_CURRENT_ENTITY = _env("HA_CURRENT_ENTITY", "sensor.elmaaler{nr:03d}_current")
+HA_VOLTAGE_ENTITY = _env("HA_VOLTAGE_ENTITY", "sensor.elmaaler{nr:03d}_voltage")
+HA_FREQUENCY_ENTITY = _env("HA_FREQUENCY_ENTITY", "sensor.elmaaler{nr:03d}_ac_frequency")
+HA_LQI_ENTITY = _env("HA_LQI_ENTITY", "sensor.elmaaler{nr:03d}_lqi")
 HA_VERIFY_TLS = _bool("HA_VERIFY_TLS", True)
 
 POLL_SECONDS = int(_env("POLL_SECONDS", "30"))

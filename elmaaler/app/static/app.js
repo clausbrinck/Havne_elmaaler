@@ -3,12 +3,14 @@
   function dk(x, d) {
     return (x == null ? "–" : Number(x).toLocaleString("da-DK", { minimumFractionDigits: d, maximumFractionDigits: d }));
   }
-  // Ampere (ca., ved 230 V) af standerens 16 A og en forklaring i almindelige ord
-  function effektInfo(el, w) {
+  // Strøm af standerens 16 A og en forklaring i almindelige ord. a = målt strøm (A); mangler den, regnes ca. ved 230 V
+  function effektInfo(el, w, a) {
     el.innerHTML = "";
     if (w == null || w === "" || isNaN(w)) return;
     w = Number(w);
-    var a = w / 230, pct = Math.min(a / 16 * 100, 100);
+    var maalt = !(a == null || a === "" || isNaN(a));
+    a = maalt ? Number(a) : w / 230;
+    var pct = Math.min(a / 16 * 100, 100);
     var tekst = w < 5 ? "Intet er tændt lige nu" :
       w < 60 ? "Meget lille – fx lader eller lys" :
       w < 300 ? "Lille – fx køleskab eller lille affugter" :
@@ -16,13 +18,13 @@
       w < 2000 ? "Stort – fx varmeblæser" :
       w < 3000 ? "Meget stort – fx varmeblæser på fuldt blus" : "Tæt på sikringens grænse!";
     var amp = document.createElement("div"); amp.className = "amp";
-    amp.textContent = "ca. " + dk(a, 1) + " A af 16 A";
+    amp.textContent = (maalt ? "" : "ca. ") + dk(a, 1) + " A af 16 A";
     var bar = document.createElement("div"); bar.className = "bar lille" + (pct >= 75 ? " adv" : "");
     var fyld = document.createElement("div"); fyld.style.width = pct + "%"; bar.appendChild(fyld);
     var t = document.createElement("div"); t.className = "forklaring"; t.textContent = tekst;
     el.appendChild(amp); el.appendChild(bar); el.appendChild(t);
   }
-  document.querySelectorAll("[data-effekt-info]").forEach(function (el) { effektInfo(el, el.getAttribute("data-w")); });
+  document.querySelectorAll("[data-effekt-info]").forEach(function (el) { effektInfo(el, el.getAttribute("data-w"), el.getAttribute("data-a")); });
 
   var live = document.querySelector("[data-live]");
   if (live) {
@@ -36,7 +38,12 @@
             el.textContent = m.online ? dk(m.effekt, 0) : "–";
           });
           document.querySelectorAll('[data-effekt-info="' + id + '"]').forEach(function (el) {
-            effektInfo(el, m.online ? m.effekt : null);
+            effektInfo(el, m.online ? m.effekt : null, m.strom);
+          });
+          [["strom", 1], ["volt", 0], ["hz", 1]].forEach(function (f) {
+            document.querySelectorAll("[data-" + f[0] + '="' + id + '"]').forEach(function (el) {
+              el.textContent = m.online && m[f[0]] != null ? dk(m[f[0]], f[1]) : "–";
+            });
           });
           document.querySelectorAll('[data-status="' + id + '"]').forEach(function (el) {
             el.className = "badge " + (m.online ? "online" : "offline");

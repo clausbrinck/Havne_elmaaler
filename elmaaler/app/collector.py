@@ -1,8 +1,8 @@
-"""Opsamling af tællerstand (kWh) og aktuel effekt (W) fra Home Assistant.
+"""Opsamling af tællerstand (kWh), effekt (W), strøm (A), spænding (V) og frekvens (Hz) fra Home Assistant.
 
 Home Assistant får målerne fra ZHA (Zigbee Home Automation) via SLZB-MR1U. Vi henter alle
 states i ét kald (GET /api/states) og plukker målernes entiteter ud via
-navnemønstrene i .env, fx sensor.elmaaler_001_summation_delivered / sensor.elmaaler_001_power.
+navnemønstrene i .env, fx sensor.elmaaler001_summation_delivered / sensor.elmaaler001_power.
 Et mønster kan have flere bud adskilt med komma (det første bud, der findes, vinder).
 """
 import logging
@@ -47,7 +47,8 @@ class HomeAssistant:
         self.kort = {}   # entity_id -> (målernr, art, prioritet)
         for nr in range(1, config.METER_COUNT + 1):
             for moenstre, art in ((config.HA_ENERGY_ENTITY, "energi"), (config.HA_POWER_ENTITY, "effekt"),
-                                  (config.HA_LQI_ENTITY, "lqi")):
+                                  (config.HA_CURRENT_ENTITY, "strom"), (config.HA_VOLTAGE_ENTITY, "volt"),
+                                  (config.HA_FREQUENCY_ENTITY, "hz"), (config.HA_LQI_ENTITY, "lqi")):
                 for prio, m in enumerate(p.strip() for p in (moenstre or "").split(",") if p.strip()):
                     self.kort[m.format(nr=nr)] = (nr, art, prio)
 
@@ -61,8 +62,8 @@ class HomeAssistant:
         for st in states:
             eid = st["entity_id"]
             nr, art, _ = self.kort[eid]
-            d = data.setdefault(nr, {"energi": None, "effekt": None, "lqi": None,
-                                     "tilg": False, "sidst_set": None})
+            d = data.setdefault(nr, {"energi": None, "effekt": None, "lqi": None, "strom": None,
+                                     "volt": None, "hz": None, "tilg": False, "sidst_set": None})
             tilstand = st.get("state")
             enhed = (st.get("attributes") or {}).get("unit_of_measurement", "")
             sidst = max(filter(None, [_iso(st.get("last_updated")), _iso(st.get("last_reported"))]), default=None)
@@ -81,6 +82,11 @@ class HomeAssistant:
             elif art == "lqi":
                 v = _tal(tilstand)
                 d["lqi"] = int(v) if v is not None else None
+            elif art in ("strom", "volt", "hz"):
+                v = _tal(tilstand)
+                if v is not None and enhed in ("mA", "mV"):
+                    v /= 1000
+                d[art] = v
         return data
 
 
@@ -144,7 +150,9 @@ class Simulator:
                 m["offline"] = not m["offline"]
             p = self.effekt(m["profil"], t)
             m["energi"] += p * dt / 3600 / 1000
+            v = round(random.uniform(228, 236), 1)
             data[nr] = {"energi": round(m["energi"], 3), "effekt": p, "lqi": m["lqi"],
+                        "strom": round(p / v, 2), "volt": v, "hz": round(random.uniform(49.95, 50.05), 2),
                         "tilg": not m["offline"], "sidst_set": int(t)}
         return data
 
@@ -158,15 +166,17 @@ def _gem_status(data):
             gl = tidligere.get(nr)
             if d and d["tilg"] and d["energi"] is not None:
                 c.execute("UPDATE status SET energi_kwh=?, effekt_w=?, linkquality=COALESCE(?, linkquality), "
+                          "strom_a=?, spaending_v=?, frekvens_hz=?, "
                           "tilgaengelig=1, sidst_set=COALESCE(?, ?), offline_siden=NULL, offline_varslet=0, "
                           "opdateret=? WHERE maaler_id=?",
-                          (d["energi"], d["effekt"], d["lqi"], d["sidst_set"], t, t, nr))
+                          (d["energi"], d["effekt"], d["lqi"], d.get("strom"), d.get("volt"), d.get("hz"),
+                           d["sidst_set"], t, t, nr))
                 if gl and gl["offline_varslet"]:
                     c.execute("INSERT INTO haendelser(ts,type,tekst) VALUES (?,?,?)",
                               (t, "måler", f"Måler {nr:03d} er tilbage online"))
             elif gl and gl["sidst_set"]:
                 # måleren har været set før, men er nu utilgængelig eller forsvundet
-                c.execute("UPDATE status SET tilgaengelig=0, effekt_w=NULL, "
+                c.execute("UPDATE status SET tilgaengelig=0, effekt_w=NULL, strom_a=NULL, spaending_v=NULL, frekvens_hz=NULL, "
                           "offline_siden=COALESCE(offline_siden, ?), opdateret=? WHERE maaler_id=?",
                           (t, t, nr))
 

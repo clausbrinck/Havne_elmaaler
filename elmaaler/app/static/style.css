@@ -44,6 +44,7 @@ tr:hover td { background: #f6f9fb; }
 .badge.kontor { background: var(--hav); color: #fff; }
 .flash { padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; }
 .flash.ok { background: #e3f4ea; color: #17663a; border: 1px solid #bfe3cd; }
+.net { font-size: .85rem; margin-top: 4px; }
 .flash.adv { background: #fdf3dc; color: #7a5410; border: 1px solid #f0dca8; }
 .flash.fejl { background: #fbe7e5; color: #8e2418; border: 1px solid #f1c3bd; word-break: break-all; }
 form.linje { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }

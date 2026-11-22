@@ -51,7 +51,9 @@
   <div class="gitter" style="margin-top:8px">
     <div class="tal effekt"><div class="v"><span data-effekt="{{ k.t.maaler_id }}">{{ k.st.effekt_w | dk(0) if k.st.tilgaengelig else '–' }}</span> <small>W</small></div>
       <div class="l">Bruger lige nu</div>
-      <div data-effekt-info="{{ k.t.maaler_id }}" data-w="{{ k.st.effekt_w if k.st.tilgaengelig else '' }}"></div></div>
+      <div data-effekt-info="{{ k.t.maaler_id }}" data-w="{{ k.st.effekt_w if k.st.tilgaengelig else '' }}" data-a="{{ k.st.strom_a if k.st.tilgaengelig and k.st.strom_a is not none else '' }}"></div>
+    {% if k.st.tilgaengelig %}<div class="net muted"><span data-volt="{{ k.t.maaler_id }}">{{ k.st.spaending_v | dk(0) if k.st.tilgaengelig and k.st.spaending_v is not none else '–' }}</span> V ·
+      <span data-hz="{{ k.t.maaler_id }}">{{ k.st.frekvens_hz | dk(1) if k.st.tilgaengelig and k.st.frekvens_hz is not none else '–' }}</span> Hz</div>{% endif %}</div>
     <div class="tal"><div class="v">{{ k.i_dag | dk(1) }} <small>kWh</small></div><div class="l">I dag (fra kl. 00)</div></div>
     <div class="tal"><div class="v">{{ k.m.kwh | dk(1) }} <small>kWh</small></div><div class="l">{{ maaned | maaned_navn | capitalize }}</div></div>
     <div class="tal"><div class="v">{{ k.total_siden_start | dk(0) }} <small>kWh</small></div><div class="l">I alt siden {{ k.t.start_dato | dato }}</div></div>

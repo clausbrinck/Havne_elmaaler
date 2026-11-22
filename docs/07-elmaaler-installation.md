@@ -1,24 +1,28 @@
 # 07 – Installation og drift af elmaaler (webinterface)
 
 Forudsætning: G3S-serveren kører Linux med Docker (se docs/02), og Home Assistant
-kører med **ZHA** (Zigbee Home Automation) på SLZB-MR1U og målerne parret og navngivet `elmaaler-001`,
-`elmaaler-002` … (se administrationsmanualens kapitel 5). MQTT og Zigbee2MQTT bruges ikke.
+kører med **ZHA** (Zigbee Home Automation) på SLZB-MR1U og målerne parret og navngivet `Elmaaler001`,
+`Elmaaler002` … (se administrationsmanualens kapitel 5). MQTT og Zigbee2MQTT bruges ikke.
 
 Alle kommandoer skrives i en terminal på serveren (eller via `ssh`).
 
 ## 1. Tjek at målerne findes i Home Assistant
 
-I Home Assistant: **Indstillinger → Enheder og tjenester → Entiteter**, søg på `elmaaler_001`.
+I Home Assistant: **Indstillinger → Enheder og tjenester → Entiteter**, søg på `elmaaler001`.
 Der skal være mindst:
 
 | Entitet | Indhold |
 |---|---|
-| `sensor.elmaaler_001_summation_delivered` (eller `…_energy`) | tællerstand i kWh |
-| `sensor.elmaaler_001_power` | effekt i W |
-| `sensor.elmaaler_001_lqi` | Zigbee-signal (valgfri – er **deaktiveret** som standard i ZHA; aktivér den, hvis du vil se signal) |
+| `sensor.elmaaler001_summation_delivered` | tællerstand i kWh |
+| `sensor.elmaaler001_power` | effekt i W |
+| `sensor.elmaaler001_current` | strøm i A |
+| `sensor.elmaaler001_voltage` | spænding i V |
+| `sensor.elmaaler001_ac_frequency` | frekvens i Hz |
+| `sensor.elmaaler001_lqi` | Zigbee-signal (valgfri – er **deaktiveret** som standard i ZHA; aktivér den, hvis du vil se signal) |
 
-Enheden må også hedde `Elmaaler001` (så hedder entiteterne `sensor.elmaaler001_…`) – begge dele findes automatisk.
-Hedder de noget andet, sættes mønstrene `HA_ENERGY_ENTITY` osv. i `.env` (flere bud adskilles med komma).
+Systemet leder kun efter `sensor.elmaaler001_…` (enheden navngivet `Elmaaler001`). Hedder de noget andet, sættes
+mønstrene `HA_ENERGY_ENTITY`, `HA_POWER_ENTITY`, `HA_CURRENT_ENTITY`, `HA_VOLTAGE_ENTITY`, `HA_FREQUENCY_ENTITY`
+og `HA_LQI_ENTITY` i `.env`.
 
 **Vigtigt – offline-tid i ZHA:** ZHA melder som standard først en netforsynet måler *utilgængelig* efter
 2 timer. Sæt det ned, så offline-varsler kommer i tide:

@@ -11,20 +11,25 @@
   <div class="tal"><div class="v">{{ ha.fundne_maalere }}</div><div class="l">Målere fundet i Home Assistant</div></div>
   <div class="tal"><div class="v">{{ lqi.snit | dk(0) if lqi.snit is not none else '–' }}</div><div class="l">Gns. linkquality (min {{ lqi.min if lqi.min is not none else '–' }})</div></div>
   <div class="tal {{ 'adv' if lqi.svage else '' }}"><div class="v">{{ lqi.svage }}</div><div class="l">Målere med svagt signal (&lt; 40)</div></div>
+  <div class="tal {{ 'adv' if net.v_afvig else '' }}"><div class="v">{{ net.v_snit | dk(0) if net.v_snit is not none else '–' }} <small>V</small></div>
+    <div class="l">Gns. spænding (min {{ net.v_min | dk(0) if net.v_min is not none else '–' }} · maks {{ net.v_max | dk(0) if net.v_max is not none else '–' }}){% if net.v_afvig %} · {{ net.v_afvig }} uden for 207–253 V{% endif %}</div></div>
+  <div class="tal"><div class="v">{{ net.hz | dk(2) if net.hz is not none else '–' }} <small>Hz</small></div><div class="l">Netfrekvens</div></div>
 </div>
 {% if ha.fejl %}<div class="flash fejl">Seneste fejl: {{ ha.fejl }}</div>{% endif %}
 
 <div class="gitter2">
 <div class="kort">
   <h2>Zigbee-målere</h2>
-  <p class="muted">Sorteret med offline og svagest signal øverst. Entiteter (ZHA): <code>{{ config.HA_ENERGY_ENTITY.split(',')[0] }}</code>, <code>{{ config.HA_POWER_ENTITY.split(',')[0] }}</code></p>
+  <p class="muted">Sorteret med offline og svagest signal øverst. Entiteter (ZHA): <code>{{ config.HA_ENERGY_ENTITY.split(',')[0] }}</code>, <code>{{ config.HA_POWER_ENTITY.split(',')[0] }}</code> m.fl.</p>
   <div class="tabel-wrap" style="max-height:620px;overflow-y:auto"><table>
-    <thead><tr><th>Måler</th><th>Placering</th><th>Status</th><th>Signal</th><th>Sidst set</th></tr></thead>
+    <thead><tr><th>Måler</th><th>Placering</th><th>Status</th><th>Signal</th><th class="n">A</th><th class="n">V</th><th>Sidst set</th></tr></thead>
     <tbody>
     {% for m in maalere if m.aktiv %}
       <tr><td><a href="{{ url_for('kontor_maaler', nr=m.id) }}">{{ '%03d' % m.id }}</a></td><td>{{ m.placering }}</td>
         <td>{{ gr.status('online' if m.tilgaengelig else ('offline' if m.sidst_set else 'ukendt')) }}</td>
         <td>{{ gr.lqi(m.linkquality) }}</td>
+        <td class="n">{{ m.strom_a | dk(1) if m.tilgaengelig and m.strom_a is not none else '–' }}</td>
+        <td class="n">{{ m.spaending_v | dk(0) if m.tilgaengelig and m.spaending_v is not none else '–' }}</td>
         <td>{{ m.sidst_set | siden }}{% if m.offline_siden %}<br><span class="muted">offline siden {{ m.offline_siden | tid }}</span>{% endif %}</td></tr>
     {% endfor %}
     </tbody>

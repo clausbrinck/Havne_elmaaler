@@ -18,7 +18,7 @@
     <li>1 · Kom godt i gang
       <ol><li>Hvad er elmålersystemet?</li><li>Log ind</li><li>Glemt adgangskode</li><li>Læg siden på telefonens hjemmeskærm</li><li>Hjælp og manualer</li></ol></li>
     <li>2 · Min side
-      <ol><li>Enkel visning</li><li>Mørk visning</li><li>Overblik over dine både</li><li>Forbrug, ampere og forbrugsgruppe</li><li>Grafen: døgn, uge, måned og vinter</li><li>Når måleren mister forbindelsen</li><li>E-mails og forbrugsrapport</li><li>Prisliste og tidligere måneder</li><li>Konto Administration</li><li>Sådan afregnes vinterstrøm</li></ol></li>
+      <ol><li>Enkel visning</li><li>Mørk visning</li><li>Overblik over dine både</li><li>Forbrug, ampere, volt og forbrugsgruppe</li><li>Grafen: døgn, uge, måned og vinter</li><li>Når måleren mister forbindelsen</li><li>E-mails og forbrugsrapport</li><li>Prisliste og tidligere måneder</li><li>Konto Administration</li><li>Sådan afregnes vinterstrøm</li></ol></li>
     <li>3 · Spørgsmål og svar
       <ol></ol></li>
   </ol>
@@ -88,7 +88,7 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
     <ol class="tal">
       <li><b>Status</b> – <span class="badge g1">online</span> eller <span class="badge g5">offline</span>.</li>
       <li>En <b>rød advarsel</b>, hvis måleren har mistet forbindelsen – tjek stik og strøm på standeren.</li>
-      <li><b>I dag</b>, <b>måneden</b> og <b>prisen indtil nu</b>. Med store tal øverst står det, båden <b>bruger lige nu</b> (watt), med ampere og en forklaring.</li>
+      <li><b>I dag</b>, <b>måneden</b> og <b>prisen indtil nu</b>. Med store tal øverst står det, båden <b>bruger lige nu</b> (watt), med ampere, en forklaring og standerens spænding (V) og frekvens (Hz).</li>
       <li><b>Bjælken</b> viser, hvor tæt du er på næste, dyrere forbrugsgruppe – og hvad den koster.</li>
       <li><b>Avanceret visning ›</b> skifter til den fulde side med grafer, e-mails og forbrugsrapport. Knappen <b>‹ Enkel visning</b> skifter tilbage.</li>
     </ol>
@@ -127,12 +127,13 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
   </div>
 </div>
 
-<h2>Forbrug, ampere og forbrugsgruppe</h2>
+<h2>Forbrug, ampere, volt og forbrugsgruppe</h2>
 <div class="billede mobil">
   <img src="billeder/minside-gruppe.png">
   <div>
     <ol class="tal">
-      <li><b>Ampere</b> – omtrent hvor meget strøm båden trækker af udtagets 16 A. Bliver bjælken orange (over 12 A), er du tæt på, at sikringen i standeren springer.</li>
+      <li><b>Ampere</b> – den strøm, måleren måler, at båden trækker af udtagets 16 A. Bliver bjælken orange (over 12 A), er du tæt på, at sikringen i standeren springer.
+        Under bjælken står <b>spændingen</b> (normalt 220–240 V) og <b>frekvensen</b> (50 Hz).</li>
       <li><b>Forklaring</b> i almindelige ord, fx <i>Lille – fx køleskab eller lille affugter</i>. Står der noget stort, og ingen er om bord, har du måske glemt at slukke noget.</li>
       <li><b>Forbrugsgruppe og pris</b> for måneden indtil nu.</li>
       <li><b>Bjælken</b> viser, hvor tæt du er på næste (dyrere) gruppe. Den bliver orange ved 90 %.</li>
@@ -267,6 +268,9 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
     <p>Se døgnvisningen time for time – så kan du se, hvornår strømmen er brugt. Tænk på varmeblæsere, affugtere og ladere. Er der stadig noget galt, så kontakt havnekontoret; systemadministratoren kan undersøge målingerne.</p></div>
   <div class="sammen"><h3>Hvad betyder ampere-bjælken?</h3>
     <p>Hvert udtag er sikret med 16 A. Bliver bjælken orange, trækker båden over ca. 12 A, og sikringen kan springe, hvis der tændes mere.</p></div>
+  <div class="sammen"><h3>Hvad betyder V og Hz?</h3>
+    <p>V (volt) er spændingen på standeren – normalt 220–240 V. Hz er netfrekvensen – altid tæt på 50 Hz. Er spændingen meget lav (under ca. 207 V),
+      så sig det til havnekontoret; det kan være en dårlig forbindelse i standeren.</p></div>
   <div class="sammen"><h3>Kan andre se mit forbrug?</h3>
     <p>Andre medlemmer kan ikke. Havnekontoret kan se alle målere – det er nødvendigt for afregningen.</p></div>
   <div class="sammen"><h3>Hvem kontakter jeg?</h3>

@@ -462,6 +462,7 @@ def api_live():
             ids = [t["maaler_id"] for t in forbrug.aktive_tildelinger(c, bruger_id=g.bruger["id"])]
             rows = [c.execute("SELECT * FROM status WHERE maaler_id=?", (i,)).fetchone() for i in ids]
     data = {r["maaler_id"]: {"effekt": r["effekt_w"], "online": bool(r["tilgaengelig"]),
+                             "strom": r["strom_a"], "volt": r["spaending_v"], "hz": r["frekvens_hz"],
                              "energi": r["energi_kwh"], "sidst": siden(r["sidst_set"])} for r in rows}
     return jsonify(maalere=data, total_kw=round(sum((r["effekt_w"] or 0) for r in rows) / 1000, 2),
                    online=sum(1 for r in rows if r["tilgaengelig"]))
@@ -866,6 +867,11 @@ def system_status():
         brugere = c.execute("SELECT * FROM brugere ORDER BY sidste_login DESC").fetchall()
         haend = c.execute("SELECT * FROM haendelser ORDER BY ts DESC LIMIT 30").fetchall()
     lqi = [m["linkquality"] for m in maalere if m["linkquality"] is not None and m["tilgaengelig"]]
+    volt = [m["spaending_v"] for m in maalere if m["spaending_v"] is not None and m["tilgaengelig"]]
+    hz = [m["frekvens_hz"] for m in maalere if m["frekvens_hz"] is not None and m["tilgaengelig"]]
+    net = {"v_min": min(volt, default=None), "v_max": max(volt, default=None),
+           "v_snit": sum(volt) / len(volt) if volt else None, "hz": sum(hz) / len(hz) if hz else None,
+           "v_afvig": sum(1 for v in volt if v < 207 or v > 253)}   # uden for 230 V +/-10 %
     login = {
         "i_alt": len(brugere),
         "aktive": sum(1 for b in brugere if b["aktiv"]),
@@ -876,7 +882,7 @@ def system_status():
         "uden_kode": sum(1 for b in brugere if b["aktiv"] and not b["pw_hash"]),
     }
     return render_template("system_status.html", maalere=maalere, ha=collector.STATUS, haend=haend,
-                           login=login, brugere=brugere[:25], config=config,
+                           login=login, brugere=brugere[:25], config=config, net=net,
                            lqi={"min": min(lqi, default=None), "snit": sum(lqi) / len(lqi) if lqi else None,
                                 "svage": sum(1 for x in lqi if x < 40)})
 

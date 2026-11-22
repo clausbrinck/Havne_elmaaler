@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS status (           -- seneste værdier fra Home Assis
     energi_kwh     REAL,
     effekt_w       REAL,
     linkquality    INTEGER,
+    strom_a        REAL,                      -- strøm (A)
+    spaending_v    REAL,                      -- spænding (V)
+    frekvens_hz    REAL,                      -- netfrekvens (Hz)
     tilgaengelig   INTEGER NOT NULL DEFAULT 0,
     sidst_set      INTEGER,                   -- sidste gang måleren meldte sig
     offline_siden  INTEGER,
@@ -193,6 +196,9 @@ def _migrer(c):
         c.execute("ALTER TABLE maanedsopgoerelser ADD COLUMN baad TEXT NOT NULL DEFAULT ''")
         c.execute("UPDATE maanedsopgoerelser SET baad=COALESCE("
                   "(SELECT b.baad FROM brugere b WHERE b.id=maanedsopgoerelser.bruger_id), '')")
+    for kol in ("strom_a", "spaending_v", "frekvens_hz"):
+        if kol not in kolonner("status"):
+            c.execute(f"ALTER TABLE status ADD COLUMN {kol} REAL")
     if "visning" not in kolonner("brugere"):
         c.execute("ALTER TABLE brugere ADD COLUMN visning TEXT NOT NULL DEFAULT 'enkel'")
 

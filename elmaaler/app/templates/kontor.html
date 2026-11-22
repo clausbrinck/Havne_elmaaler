@@ -32,7 +32,7 @@
   </div>
   <div class="tabel-wrap"><table id="maalertabel">
     <thead><tr><th>Måler</th><th>Placering</th><th>Bruger</th><th class="skjul-mobil">Tildelt fra</th><th>Status</th>
-      <th class="n">Effekt W</th><th class="n">kWh {{ maaned[5:] }}/{{ maaned[:4] }}</th><th>Gruppe</th><th class="n skjul-mobil">Tæller kWh</th><th class="skjul-mobil">Signal</th></tr></thead>
+      <th class="n">Effekt W</th><th class="n">A</th><th class="n skjul-mobil">V</th><th class="n">kWh {{ maaned[5:] }}/{{ maaned[:4] }}</th><th>Gruppe</th><th class="n skjul-mobil">Tæller kWh</th><th class="skjul-mobil">Signal</th></tr></thead>
     <tbody>
     {% for r in tabel %}
       <tr data-tags="{{ r.tilstand }} {{ 'tildelt' if r.t else 'ledig' }}" {% if not r.m.aktiv %}style="opacity:.5"{% endif %}>
@@ -42,6 +42,8 @@
         <td class="skjul-mobil">{{ r.t.start_dato | dato if r.t else '' }}</td>
         <td>{{ gr.status(r.tilstand, r.m.id) }}</td>
         <td class="n" data-effekt="{{ r.m.id }}">{{ r.m.effekt_w | dk(0) if r.m.tilgaengelig else '–' }}</td>
+        <td class="n" data-strom="{{ r.m.id }}">{{ r.m.strom_a | dk(1) if r.m.tilgaengelig and r.m.strom_a is not none else '–' }}</td>
+        <td class="n skjul-mobil" data-volt="{{ r.m.id }}">{{ r.m.spaending_v | dk(0) if r.m.tilgaengelig and r.m.spaending_v is not none else '–' }}</td>
         <td class="n">{{ r.kwh | dk(1) }}</td>
         <td>{% if r.kwh > 0 or r.t %}{{ gr.gruppe(r.kat.gruppe, r.kat.label) }}{% endif %}</td>
         <td class="n skjul-mobil">{{ r.m.energi_kwh | dk(1) }}</td>

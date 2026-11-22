@@ -28,12 +28,12 @@ en lokal database og har et webinterface for medlemmer og havnekontor.
 - Skift email og adgangskode · glemt kode via email
 
 **Havnekontor-login**
-- Overblik over alle målere: bruger, tildelt fra, status, effekt, månedens kWh og gruppe, signal
+- Overblik over alle målere: bruger, tildelt fra, status, effekt, strøm (A), spænding (V), månedens kWh og gruppe, signal
 - Samlet effekt nu og sidste døgn, samlet forbrug pr. dag
 - Brugere: opret, invitér på mail, tildel/afslut måler med dato, CSV-import af mange på én gang
 - Opgørelse pr. måned: hvem er i hvilken gruppe (indeværende måned til nu og afsluttede måneder),
   fordeling og beløb, CSV til Excel, samlet vinterperiode pr. bruger til opkrævning ved standerhejsning
-- Netværk & status: Home Assistant-forbindelse, signal (linkquality) pr. måler,
+- Netværk & status: Home Assistant-forbindelse, signal (linkquality), strøm og spænding pr. måler, spænding og frekvens på nettet,
   offline-målere, brugerlogins, hændelseslog
 - Indstillinger: hvilke kontor-mails (manglende forbindelse til måler nr. …, samlet forbrug døgn/uge/måned),
   ekstra modtagere, forbrugsgrupper og priser, backup

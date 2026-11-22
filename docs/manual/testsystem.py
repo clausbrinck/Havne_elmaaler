@@ -68,6 +68,7 @@ def hent(self):
         data[nr]["tilg"] = False
     for nr, w in W.items():
         data[nr]["effekt"] = w
+        data[nr]["strom"] = round(w / (data[nr].get("volt") or 230), 2)
         data[nr]["tilg"] = True
     for nr in data:
         if nr not in OFF and nr not in W and self.m[nr]["offline"]:

@@ -56,8 +56,10 @@
   <ol class="tal">
     <li><b>System</b> i menuen – kun for systemadministratorer.</li>
     <li><b>Fanerne:</b> Status, Log, Måleropsætning, Database &amp; backup, Indstillinger og Debug.</li>
-    <li><b>Zigbee-målere:</b> forbindelse og signalstyrke (linkquality) for hver måler. Målere med svagt signal står øverst – flyt evt. en Zigbee-router tættere på.</li>
+    <li><b>Zigbee-målere:</b> forbindelse, signalstyrke (linkquality), strøm (A) og spænding (V) for hver måler. Målere med svagt signal står øverst – flyt evt. en Zigbee-router tættere på.</li>
   </ol>
+  <p>Øverst står også <b>gennemsnitlig spænding</b> med laveste og højeste måling og <b>netfrekvensen</b>. Ligger en måler uden for 207–253 V (230 V ±10 %),
+    bliver feltet gult – det kan tyde på en dårlig forbindelse i en stander eller et overbelastet kabel. Frekvensen skal ligge meget tæt på 50 Hz.</p>
 </div>
 
 <h2>Systemloggen</h2>
@@ -268,15 +270,15 @@
 <table>
   <thead><tr><th style="width:30%">Led</th><th>Hvad det gør</th></tr></thead>
   <tbody>
-    <tr><td><b>Elmåler</b> (Shelly EM Mini Gen4)</td><td>Sidder i adapteren mellem standerens udtag og bådens kabel. Måler effekt (W) og tæller energi (kWh). Sender trådløst med Zigbee.</td></tr>
+    <tr><td><b>Elmåler</b> (Shelly EM Mini Gen4)</td><td>Sidder i adapteren mellem standerens udtag og bådens kabel. Måler effekt (W), strøm (A), spænding (V) og frekvens (Hz) og tæller energi (kWh). Sender trådløst med Zigbee.</td></tr>
     <tr><td><b>Zigbee-koordinator</b> (SMLIGHT SLZB-MR1U)</td><td>Modtager Zigbee-signalerne fra målerne. Alle målere er netforsynede og virker også som <i>routere</i>, så de sender signalet videre for hinanden.</td></tr>
     <tr><td><b>ZHA</b> (Zigbee Home Automation)</td><td>Home Assistants indbyggede Zigbee-integration. Taler med SLZB-MR1U og opretter målerne som enheder i Home Assistant. Der bruges ikke MQTT eller Zigbee2MQTT.</td></tr>
-    <tr><td><b>Home Assistant</b></td><td>Holder den aktuelle værdi for hver måler, fx <code>sensor.elmaaler_001_energy</code>.</td></tr>
+    <tr><td><b>Home Assistant</b></td><td>Holder den aktuelle værdi for hver måler, fx <code>sensor.elmaaler001_summation_delivered</code>.</td></tr>
     <tr><td><b>Elmåler-systemet</b> (denne webside)</td><td>Henter alle værdier fra Home Assistant hvert 30. sekund og gemmer en aflæsning pr. måler hvert 15. minut.</td></tr>
   </tbody>
 </table>
-<div class="info"><b>Navnet er nøglen</b>Nummeret på målerens låg (<b>NR. 001</b>), enhedens navn i Home Assistant (<code>elmaaler-001</code>),
-  entiteterne i Home Assistant (<code>sensor.elmaaler_001_…</code>) og måler <b>1</b> i elmåler-systemet er den samme måler.
+<div class="info"><b>Navnet er nøglen</b>Nummeret på målerens låg (<b>NR. 001</b>), enhedens navn i Home Assistant (<code>Elmaaler001</code>),
+  entiteterne i Home Assistant (<code>sensor.elmaaler001_…</code>) og måler <b>1</b> i elmåler-systemet er den samme måler.
   Navngiv altid efter nummeret på låget – så passer resten af sig selv.</div>
 
 <h2>Elmåleren</h2>
@@ -343,17 +345,18 @@
 <h3>Trin 3 – Giv måleren det rigtige navn</h3>
 <ol class="trin">
   <li>Åbn måleren (enheden) i Home Assistant og tryk på <b>blyanten</b> øverst.</li>
-  <li>Skriv navnet <code>elmaaler-001</code> – altid tre cifre, samme nummer som på låget – og tryk <b>Opdater</b>.</li>
-  <li>Home Assistant spørger, om entitets-id'erne også skal omdøbes: tryk <b>Omdøb</b>. Det er det, der giver navnene <code>sensor.elmaaler_001_…</code>.</li>
+  <li>Skriv navnet <code>Elmaaler001</code> – uden mellemrum eller bindestreg, altid tre cifre, samme nummer som på låget – og tryk <b>Opdater</b>.</li>
+  <li>Home Assistant spørger, om entitets-id'erne også skal omdøbes: tryk <b>Omdøb</b>. Det er det, der giver navnene <code>sensor.elmaaler001_…</code>.</li>
   <li>Vil du se signalet under System → Status: find <b>LQI</b> under <i>Diagnostik</i> på enheden → tandhjulet → <b>Aktiveret</b>.</li>
   <li>Sæt en mærkat eller skriv nummeret på Shelly'en indeni, før låget skrues på.</li>
 </ol>
 
 <h3>Trin 4 – Tjek</h3>
 <ol class="trin">
-  <li>I Home Assistant under <b>Indstillinger → Enheder og tjenester → Entiteter</b>: søg på <code>elmaaler_001</code>. Der skal være en
-    tællerstand i kWh (<code>sensor.elmaaler_001_summation_delivered</code> eller <code>…_energy</code>) og <code>sensor.elmaaler_001_power</code> (W).</li>
-  <li>Sæt en belastning på (fx en varmeblæser) og se, at effekten stiger.</li>
+  <li>I Home Assistant under <b>Indstillinger → Enheder og tjenester → Entiteter</b>: søg på <code>elmaaler001</code>. Der skal være
+    <code>sensor.elmaaler001_summation_delivered</code> (kWh), <code>…_power</code> (W), <code>…_current</code> (A), <code>…_voltage</code> (V) og <code>…_ac_frequency</code> (Hz).</li>
+  <li>Sæt en belastning på (fx en varmeblæser) og se, at effekten stiger, og at det er <b>Summation delivered</b>, der tæller op.
+    Tæller <i>Summation received</i> i stedet, er L og O byttet om i adapteren.</li>
   <li>Efter et minut ses måleren under <b>System → Status</b> i elmåler-systemet. Sæt placering (fx S12-U3) under <b>System → Måleropsætning</b>.</li>
 </ol>
 
@@ -365,7 +368,7 @@
 <h3>Udskift en defekt måler</h3>
 <ol class="trin">
   <li>Fjern den gamle måler i Home Assistant (enheden → ⋮ → <b>Fjern</b>). Slet også eventuelle gamle entiteter med samme navn, ellers får den nye et <code>_2</code> bagerst.</li>
-  <li>Par den nye som ovenfor og giv den <b>samme navn</b>, fx <code>elmaaler-001</code>. Så fortsætter forbruget på samme måler og samme båd i systemet.</li>
+  <li>Par den nye som ovenfor og giv den <b>samme navn</b>, fx <code>Elmaaler001</code>. Så fortsætter forbruget på samme måler og samme båd i systemet.</li>
   <li>Den nye tæller starter fra en anden værdi. Systemet tæller kun forskellen fra aflæsning til aflæsning, så forbruget bliver ikke forkert. Se eventuelt <b>System → Log</b>.</li>
 </ol>
 
@@ -391,12 +394,18 @@
 <table>
   <thead><tr><th style="width:48%">Entitet</th><th>Bruges til</th></tr></thead>
   <tbody>
-    <tr><td><code>sensor.elmaaler_001_summation_delivered</code><br><span class="muted">(eller <code>…_energy</code>)</span></td><td>Tællerstand i kWh – grundlaget for al afregning</td></tr>
-    <tr><td><code>sensor.elmaaler_001_power</code></td><td>Effekt lige nu i W</td></tr>
-    <tr><td><code>sensor.elmaaler_001_lqi</code></td><td>Zigbee-signal. Er slået <b>fra</b> som standard – slå den til, hvis signalet skal ses under System → Status</td></tr>
+    <tr><td><code>sensor.elmaaler001_summation_delivered</code></td><td>Tællerstand i kWh – grundlaget for al afregning</td></tr>
+    <tr><td><code>sensor.elmaaler001_power</code></td><td>Effekt lige nu i W</td></tr>
+    <tr><td><code>sensor.elmaaler001_current</code></td><td>Strøm i A – vises af 16 A på Min side og i overblikket</td></tr>
+    <tr><td><code>sensor.elmaaler001_voltage</code></td><td>Spænding i V – vises på Min side, måler-siden og System → Status</td></tr>
+    <tr><td><code>sensor.elmaaler001_ac_frequency</code></td><td>Netfrekvens i Hz</td></tr>
+    <tr><td><code>sensor.elmaaler001_summation_received</code></td><td>Bruges ikke (strøm den anden vej – skal stå på 0)</td></tr>
+    <tr><td><code>sensor.elmaaler001_lqi</code></td><td>Zigbee-signal. Er slået <b>fra</b> som standard – slå den til, hvis signalet skal ses under System → Status</td></tr>
   </tbody>
 </table>
-<p>Systemet finder både <code>sensor.elmaaler_001_…</code> (enheden hedder <code>elmaaler-001</code>) og <code>sensor.elmaaler001_…</code> (enheden hedder <code>Elmaaler001</code>), og begge navne for tællerstanden. Hedder entiteterne noget helt andet, sættes <code>HA_ENERGY_ENTITY</code>, <code>HA_POWER_ENTITY</code> og <code>HA_LQI_ENTITY</code> i <i>.env</i> (flere bud adskilles med komma).</p>
+<p>Systemet leder kun efter navne af formen <code>sensor.elmaaler001_…</code>. Hedder entiteterne noget andet, sættes
+  <code>HA_ENERGY_ENTITY</code>, <code>HA_POWER_ENTITY</code>, <code>HA_CURRENT_ENTITY</code>, <code>HA_VOLTAGE_ENTITY</code>,
+  <code>HA_FREQUENCY_ENTITY</code> og <code>HA_LQI_ENTITY</code> i <i>.env</i>.</p>
 
 <h3>Adgangstoken til elmåler-systemet</h3>
 <ol class="trin">
