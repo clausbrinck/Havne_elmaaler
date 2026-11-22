@@ -10,7 +10,7 @@
     <input type="search" placeholder="Søg målernr. eller bruger…" data-filter="opsaetning" style="width:260px"></div>
   <p class="muted">Placering (stander-udtag, fx <code>S12-U3</code>), aktiv og note for alle målere. Inaktive målere giver ikke
     offline-varsler. Antal målere (<code>METER_COUNT={{ config.METER_COUNT }}</code>) og Home Assistant-entiteter
-    (<code>{{ config.HA_ENERGY_ENTITY }}</code>) sættes i <code>.env</code>. Kun ændrede rækker gemmes.</p>
+    (<code>{{ config.HA_ENERGY_ENTITY.split(',')[0] }}</code>) sættes i <code>.env</code>. Kun ændrede rækker gemmes.</p>
   <form method="post">
     <input type="hidden" name="csrf" value="{{ csrf() }}">
     <div class="tabel-wrap" style="max-height:640px;overflow-y:auto"><table id="opsaetning">

@@ -2,12 +2,12 @@
 
 Trådløs måling af strømforbrug på havnens elstandere. Hvert udtag har en
 Shelly EM Mini Gen4 (Zigbee) i et nummereret hus ("Elmåler NR. 001" …).
-Målerne kommer ind i **Home Assistant** via Zigbee2MQTT. Programmet `elmaaler`
+Målerne kommer ind i **Home Assistant** via ZHA (Zigbee Home Automation). Programmet `elmaaler`
 henter tællerstand (kWh) og aktuel effekt (W) fra Home Assistant, gemmer dem i
 en lokal database og har et webinterface for medlemmer og havnekontor.
 
 ```
- Shelly EM Mini ~~Zigbee~~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Home Assistant
+ Shelly EM Mini ~~Zigbee~~ SLZB-MR1U ── ZHA (Zigbee Home Automation) ─ Home Assistant
                                                                     │ REST API (hvert 30. s)
                                                                     ▼
                                          elmaaler (Docker) ─ SQLite ─ backup hver nat
@@ -33,7 +33,7 @@ en lokal database og har et webinterface for medlemmer og havnekontor.
 - Brugere: opret, invitér på mail, tildel/afslut måler med dato, CSV-import af mange på én gang
 - Opgørelse pr. måned: hvem er i hvilken gruppe (indeværende måned til nu og afsluttede måneder),
   fordeling og beløb, CSV til Excel, samlet vinterperiode pr. bruger til opkrævning ved standerhejsning
-- Netværk & status: Home Assistant/Zigbee2MQTT-forbindelse, signal (linkquality) pr. måler,
+- Netværk & status: Home Assistant-forbindelse, signal (linkquality) pr. måler,
   offline-målere, brugerlogins, hændelseslog
 - Indstillinger: hvilke kontor-mails (manglende forbindelse til måler nr. …, samlet forbrug døgn/uge/måned),
   ekstra modtagere, forbrugsgrupper og priser, backup

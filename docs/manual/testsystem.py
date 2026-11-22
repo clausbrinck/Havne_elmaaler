@@ -63,7 +63,7 @@ _orig = collector.Simulator.hent
 
 
 def hent(self):
-    data, bro = _orig(self)
+    data = _orig(self)
     for nr in OFF:
         data[nr]["tilg"] = False
     for nr, w in W.items():
@@ -72,7 +72,7 @@ def hent(self):
     for nr in data:
         if nr not in OFF and nr not in W and self.m[nr]["offline"]:
             data[nr]["tilg"] = True          # ellers stabilt: kun de tvungne er offline
-    return data, bro
+    return data
 
 
 collector.Simulator.hent = hent

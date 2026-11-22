@@ -31,10 +31,12 @@ METER_COUNT = int(_env("METER_COUNT", "200"))
 SOURCE = _env("SOURCE", "homeassistant")
 HA_URL = _env("HA_URL", "http://homeassistant:8123").rstrip("/")
 HA_TOKEN = _env("HA_TOKEN", "")
-HA_ENERGY_ENTITY = _env("HA_ENERGY_ENTITY", "sensor.elmaaler_{nr:03d}_energy")
+# Entitets-navne i Home Assistant (ZHA, enheden navngivet elmaaler-001). Flere mønstre adskilles med komma –
+# det første, der findes, bruges. {nr:03d} erstattes med 001, 002 …
+HA_ENERGY_ENTITY = _env("HA_ENERGY_ENTITY",
+                        "sensor.elmaaler_{nr:03d}_summation_delivered,sensor.elmaaler_{nr:03d}_energy")
 HA_POWER_ENTITY = _env("HA_POWER_ENTITY", "sensor.elmaaler_{nr:03d}_power")
-HA_LQI_ENTITY = _env("HA_LQI_ENTITY", "sensor.elmaaler_{nr:03d}_linkquality")
-HA_BRIDGE_ENTITY = _env("HA_BRIDGE_ENTITY", "binary_sensor.zigbee2mqtt_bridge_connection_state")
+HA_LQI_ENTITY = _env("HA_LQI_ENTITY", "sensor.elmaaler_{nr:03d}_lqi,sensor.elmaaler_{nr:03d}_linkquality")
 HA_VERIFY_TLS = _bool("HA_VERIFY_TLS", True)
 
 POLL_SECONDS = int(_env("POLL_SECONDS", "30"))

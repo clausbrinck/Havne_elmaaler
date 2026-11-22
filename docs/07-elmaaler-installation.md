@@ -1,7 +1,8 @@
 # 07 – Installation og drift af elmaaler (webinterface)
 
 Forudsætning: G3S-serveren kører Linux med Docker (se docs/02), og Home Assistant
-kører med Zigbee2MQTT og målerne parret som `elmaaler-001`, `elmaaler-002` …
+kører med **ZHA** (Zigbee Home Automation) på SLZB-MR1U og målerne parret og navngivet `elmaaler-001`,
+`elmaaler-002` … (se administrationsmanualens kapitel 5). MQTT og Zigbee2MQTT bruges ikke.
 
 Alle kommandoer skrives i en terminal på serveren (eller via `ssh`).
 
@@ -12,23 +13,16 @@ Der skal være mindst:
 
 | Entitet | Indhold |
 |---|---|
-| `sensor.elmaaler_001_energy` | tællerstand i kWh |
+| `sensor.elmaaler_001_summation_delivered` (eller `…_energy`) | tællerstand i kWh |
 | `sensor.elmaaler_001_power` | effekt i W |
-| `sensor.elmaaler_001_linkquality` | Zigbee-signal (valgfri – er **deaktiveret** som standard; aktivér den, hvis du vil se signal) |
+| `sensor.elmaaler_001_lqi` | Zigbee-signal (valgfri – er **deaktiveret** som standard i ZHA; aktivér den, hvis du vil se signal) |
 
-Hedder de noget andet, rettes mønstrene `HA_ENERGY_ENTITY` osv. i `.env`.
+Hedder de noget andet, sættes mønstrene `HA_ENERGY_ENTITY` osv. i `.env` (flere bud adskilles med komma).
 
-**Vigtigt – Zigbee2MQTT "availability":** for at målere vises som *offline*, når de mister
-forbindelsen, skal availability være slået til i Zigbee2MQTT. I `configuration.yaml`:
-
-```yaml
-availability:
-  enabled: true
-  active:
-    timeout: 10      # minutter – netforsynede enheder (routere)
-```
-
-Ellers vil Home Assistant blive ved med at vise den sidste værdi, og offline-varsler kommer ikke.
+**Vigtigt – offline-tid i ZHA:** ZHA melder som standard først en netforsynet måler *utilgængelig* efter
+2 timer. Sæt det ned, så offline-varsler kommer i tide:
+**Indstillinger → Enheder og tjenester → Zigbee Home Automation → Konfigurer →**
+*Betragt netdrevne enheder som utilgængelige efter (sekunder)* = **900**.
 
 ## 2. Lav et adgangstoken i Home Assistant
 
@@ -250,6 +244,6 @@ Sikkerhed i programmet: adgangskoder gemmes som PBKDF2-hash, login spærres 15 m
 | "Ingen forbindelse til Home Assistant: 401" | Forkert `HA_TOKEN` |
 | "… Connection refused" | Forkert `HA_URL` – brug serverens IP, ikke `localhost`, inde fra Docker |
 | Målere fundet = 0 | Entitetsnavnene passer ikke – tjek mønstrene i `.env` mod Home Assistant |
-| Måler aldrig offline | Availability er ikke slået til i Zigbee2MQTT (se trin 1) |
+| Måler sent eller aldrig offline | Sæt ZHA's tid for utilgængelige netdrevne enheder ned (se trin 1) |
 | Ingen mails | Tjek `SMTP_...`, send testmail, se Hændelseslog |
 | `Permission denied: /data` | `sudo chown -R 1000:1000 data` |

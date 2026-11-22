@@ -1,8 +1,9 @@
 """Opsamling af tællerstand (kWh) og aktuel effekt (W) fra Home Assistant.
 
-Home Assistant får målerne fra Zigbee2MQTT (MQTT discovery). Vi henter alle
+Home Assistant får målerne fra ZHA (Zigbee Home Automation) via SLZB-MR1U. Vi henter alle
 states i ét kald (GET /api/states) og plukker målernes entiteter ud via
-navnemønstrene i .env, fx sensor.elmaaler_001_energy / sensor.elmaaler_001_power.
+navnemønstrene i .env, fx sensor.elmaaler_001_summation_delivered / sensor.elmaaler_001_power.
+Et mønster kan have flere bud adskilt med komma (det første bud, der findes, vinder).
 """
 import logging
 import random
@@ -16,9 +17,8 @@ from .tid import nu
 
 log = logging.getLogger("collector")
 
-STATUS = {"ok": False, "fejl": "Ikke startet", "sidst_ok": None, "bridge": None,
-          "fundne_maalere": 0, "kilde": config.SOURCE, "ha_fejl_siden": None,
-          "bridge_entitet": None}
+STATUS = {"ok": False, "fejl": "Ikke startet", "sidst_ok": None,
+          "fundne_maalere": 0, "kilde": config.SOURCE, "ha_fejl_siden": None}
 
 UTILGAENGELIG = ("unavailable", "unknown", "", None)
 
@@ -44,28 +44,23 @@ class HomeAssistant:
         self.s = requests.Session()
         self.s.headers["Authorization"] = f"Bearer {config.HA_TOKEN}"
         self.s.verify = config.HA_VERIFY_TLS
-        self.kort = {}
+        self.kort = {}   # entity_id -> (målernr, art, prioritet)
         for nr in range(1, config.METER_COUNT + 1):
-            self.kort[config.HA_ENERGY_ENTITY.format(nr=nr)] = (nr, "energi")
-            self.kort[config.HA_POWER_ENTITY.format(nr=nr)] = (nr, "effekt")
-            if config.HA_LQI_ENTITY:
-                self.kort[config.HA_LQI_ENTITY.format(nr=nr)] = (nr, "lqi")
+            for moenstre, art in ((config.HA_ENERGY_ENTITY, "energi"), (config.HA_POWER_ENTITY, "effekt"),
+                                  (config.HA_LQI_ENTITY, "lqi")):
+                for prio, m in enumerate(p.strip() for p in (moenstre or "").split(",") if p.strip()):
+                    self.kort[m.format(nr=nr)] = (nr, art, prio)
 
     def hent(self):
         r = self.s.get(f"{config.HA_URL}/api/states", timeout=20)
         r.raise_for_status()
-        data, bridge, gaet = {}, None, None
-        for st in r.json():
-            eid = st.get("entity_id") or ""
-            if eid == config.HA_BRIDGE_ENTITY:
-                bridge = st.get("state")
-                STATUS["bridge_entitet"] = eid
-                continue
-            if gaet is None and eid.startswith("binary_sensor.") and "zigbee2mqtt" in eid                     and "connection_state" in eid:
-                gaet = (eid, st.get("state"))   # reserve, hvis det konfigurerede navn ikke findes
-            if eid not in self.kort:
-                continue
-            nr, art = self.kort[eid]
+        data = {}
+        # bedste bud først, så et reserve-navn aldrig overskriver det foretrukne
+        states = sorted((st for st in r.json() if st.get("entity_id") in self.kort),
+                        key=lambda st: -self.kort[st["entity_id"]][2])
+        for st in states:
+            eid = st["entity_id"]
+            nr, art, _ = self.kort[eid]
             d = data.setdefault(nr, {"energi": None, "effekt": None, "lqi": None,
                                      "tilg": False, "sidst_set": None})
             tilstand = st.get("state")
@@ -86,9 +81,7 @@ class HomeAssistant:
             elif art == "lqi":
                 v = _tal(tilstand)
                 d["lqi"] = int(v) if v is not None else None
-        if bridge is None:
-            STATUS["bridge_entitet"], bridge = gaet if gaet else (None, None)
-        return data, bridge
+        return data
 
 
 class Simulator:
@@ -153,7 +146,7 @@ class Simulator:
             m["energi"] += p * dt / 3600 / 1000
             data[nr] = {"energi": round(m["energi"], 3), "effekt": p, "lqi": m["lqi"],
                         "tilg": not m["offline"], "sidst_set": int(t)}
-        return data, "true"
+        return data
 
 
 def _gem_status(data):
@@ -189,9 +182,9 @@ def lav_kilde():
 
 def poll_en_gang(kilde):
     try:
-        data, bridge = kilde.hent()
+        data = kilde.hent()
         _gem_status(data)
-        STATUS.update(ok=True, fejl=None, sidst_ok=nu(), bridge=bridge,
+        STATUS.update(ok=True, fejl=None, sidst_ok=nu(),
                       fundne_maalere=sum(1 for d in data.values() if d.get("energi") is not None),
                       ha_fejl_siden=None)
     except Exception as e:  # noqa: BLE001 – vi vil aldrig have at opsamlingen dør

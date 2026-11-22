@@ -20,8 +20,8 @@ services:
       SOURCE: ${SOURCE:-homeassistant}
       HA_URL: ${HA_URL}
       HA_TOKEN: ${HA_TOKEN}
-      # Meter entity names default to sensor.elmaaler_001_energy / _power / _linkquality
-      HA_BRIDGE_ENTITY: ${HA_BRIDGE_ENTITY:-binary_sensor.zigbee2mqtt_bridge_connection_state}
+      # Meter entity names (ZHA, device named elmaaler-001) default to
+      # sensor.elmaaler_001_summation_delivered (or _energy) / _power / _lqi
       POLL_SECONDS: ${POLL_SECONDS:-30}
       # Email
       SMTP_HOST: ${SMTP_HOST:-}
