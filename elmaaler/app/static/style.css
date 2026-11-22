@@ -44,6 +44,7 @@ tr:hover td { background: #f6f9fb; }
 .badge.kontor { background: var(--hav); color: #fff; }
 .flash { padding: 10px 14px; border-radius: 8px; margin-bottom: 14px; }
 .flash.ok { background: #e3f4ea; color: #17663a; border: 1px solid #bfe3cd; }
+.flash.adv { background: #fdf3dc; color: #7a5410; border: 1px solid #f0dca8; }
 .flash.fejl { background: #fbe7e5; color: #8e2418; border: 1px solid #f1c3bd; word-break: break-all; }
 form.linje { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
 label { display: block; font-size: 13px; color: var(--graa); margin-bottom: 3px; }
@@ -230,6 +231,7 @@ header.top, main { position: relative; z-index: 1; }
   .badge.g5 { background: #47201d; color: #f59184; } .badge.g6 { background: #3c1d39; color: #e597dc; }
   .badge.kontor { background: #2f6fa1; }
   .flash.ok { background: #163826; color: #8fe0b0; border-color: #24563a; }
+  .flash.adv { background: #3a2f14; color: #f3d48a; border-color: #66531f; }
   .flash.fejl, .besked.alarm { background: #3a1c19; color: #ffb3a8; border-color: #6a2e27; }
   .besked.alarm { border-left-color: var(--fejl); }
   .besked.info { background: #18232e; }

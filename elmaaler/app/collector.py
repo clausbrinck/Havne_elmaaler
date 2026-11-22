@@ -17,7 +17,8 @@ from .tid import nu
 log = logging.getLogger("collector")
 
 STATUS = {"ok": False, "fejl": "Ikke startet", "sidst_ok": None, "bridge": None,
-          "fundne_maalere": 0, "kilde": config.SOURCE, "ha_fejl_siden": None}
+          "fundne_maalere": 0, "kilde": config.SOURCE, "ha_fejl_siden": None,
+          "bridge_entitet": None}
 
 UTILGAENGELIG = ("unavailable", "unknown", "", None)
 
@@ -53,12 +54,15 @@ class HomeAssistant:
     def hent(self):
         r = self.s.get(f"{config.HA_URL}/api/states", timeout=20)
         r.raise_for_status()
-        data, bridge = {}, None
+        data, bridge, gaet = {}, None, None
         for st in r.json():
-            eid = st.get("entity_id")
+            eid = st.get("entity_id") or ""
             if eid == config.HA_BRIDGE_ENTITY:
                 bridge = st.get("state")
+                STATUS["bridge_entitet"] = eid
                 continue
+            if gaet is None and eid.startswith("binary_sensor.") and "zigbee2mqtt" in eid                     and "connection_state" in eid:
+                gaet = (eid, st.get("state"))   # reserve, hvis det konfigurerede navn ikke findes
             if eid not in self.kort:
                 continue
             nr, art = self.kort[eid]
@@ -82,6 +86,8 @@ class HomeAssistant:
             elif art == "lqi":
                 v = _tal(tilstand)
                 d["lqi"] = int(v) if v is not None else None
+        if bridge is None:
+            STATUS["bridge_entitet"], bridge = gaet if gaet else (None, None)
         return data, bridge
 
 
