@@ -8,16 +8,13 @@
 <div class="gitter">
   <div class="tal {{ 'ok' if ha.ok else 'fejl' }}"><div class="v">{{ 'OK' if ha.ok else 'FEJL' }}</div>
     <div class="l">{{ 'Simulator' if ha.kilde == 'sim' else 'Home Assistant' }} · sidst ok {{ ha.sidst_ok | siden }}</div></div>
-  <div class="tal {{ 'ok' if ha.bridge in ('on', 'true', 'online') else 'adv' }}"><div class="v">{{ ha.bridge or 'ikke fundet' }}</div><div class="l">Zigbee2MQTT bridge</div></div>
+  {% if ha.bridge %}<div class="tal {{ 'ok' if ha.bridge in ('on', 'true', 'online') else 'adv' }}"><div class="v">{{ ha.bridge }}</div><div class="l">Zigbee2MQTT bridge</div></div>
+  {% else %}<div class="tal"><div class="v">–</div><div class="l">Zigbee2MQTT bruges ikke (fx ZHA)</div></div>{% endif %}
   <div class="tal"><div class="v">{{ ha.fundne_maalere }}</div><div class="l">Målere fundet i Home Assistant</div></div>
   <div class="tal"><div class="v">{{ lqi.snit | dk(0) if lqi.snit is not none else '–' }}</div><div class="l">Gns. linkquality (min {{ lqi.min if lqi.min is not none else '–' }})</div></div>
   <div class="tal {{ 'adv' if lqi.svage else '' }}"><div class="v">{{ lqi.svage }}</div><div class="l">Målere med svagt signal (&lt; 40)</div></div>
 </div>
-{% if ha.ok and ha.kilde != 'sim' and not ha.bridge %}<div class="flash adv">Zigbee2MQTT-broens status findes ikke i Home Assistant
-  (entiteten <code>{{ config.HA_BRIDGE_ENTITY }}</code>). Målerne virker fint uden – det er kun en ekstra statusvisning.
-  Find den rigtige entitet i Home Assistant under <i>Indstillinger → Enheder og tjenester → MQTT → Zigbee2MQTT Bridge → Connection state</i>
-  (slå den til, hvis den er deaktiveret), og sæt <code>HA_BRIDGE_ENTITY</code> i .env.</div>
-{% elif ha.bridge_entitet and ha.bridge_entitet != config.HA_BRIDGE_ENTITY %}<div class="flash adv">Bruger <code>{{ ha.bridge_entitet }}</code> som Zigbee2MQTT-bro
+{% if ha.bridge_entitet and ha.bridge_entitet != config.HA_BRIDGE_ENTITY %}<div class="flash adv">Bruger <code>{{ ha.bridge_entitet }}</code> som Zigbee2MQTT-bro
   (fundet automatisk). Sæt <code>HA_BRIDGE_ENTITY={{ ha.bridge_entitet }}</code> i .env for at fastlåse den.</div>
 {% endif %}
 {% if ha.fejl %}<div class="flash fejl">Seneste fejl: {{ ha.fejl }}</div>{% endif %}
