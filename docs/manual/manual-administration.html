@@ -23,7 +23,9 @@
       <ol></ol></li>
     <li>4 · Backup i OneDrive
       <ol><li>Det skal du bruge</li><li>Trin 1–6: opsætning</li><li>Daglig kontrol</li><li>Gendan fra OneDrive</li></ol></li>
-    <li>5 · Drift og vedligehold
+    <li>5 · Hardware: målere og Home Assistant
+      <ol><li>Sådan hænger det sammen</li><li>Elmåleren (Shelly EM Mini Gen4)</li><li>Opsætning af en ny måler</li><li>Nulstil og udskift en måler</li><li>Opsætning af Home Assistant</li><li>Godt Zigbee-net på havnen</li></ol></li>
+    <li>6 · Drift og vedligehold
       <ol><li>Opdatering af systemet</li><li>Backup – det vigtigste</li><li>Automatiske job</li><li>Manualerne på websiden</li><li>Teknisk dokumentation</li></ol></li>
   </ol>
 </div>
@@ -260,7 +262,171 @@
 </ol>
 <div class="tip"><b>Øv det én gang om året</b>Hent en backup til en test-pc og se, at den kan åbnes. En backup er først sikker, når man har set den virke.</div>
 
-<h1><span class="nr">5</span><div>Drift og vedligehold</div></h1>
+<h1><span class="nr">5</span><div>Hardware: målere og Home Assistant<small>Elmåleren, Shelly EM Mini Gen4, Zigbee2MQTT og Home Assistant</small></div></h1>
+
+<h2>Sådan hænger det sammen</h2>
+<table>
+  <thead><tr><th style="width:30%">Led</th><th>Hvad det gør</th></tr></thead>
+  <tbody>
+    <tr><td><b>Elmåler</b> (Shelly EM Mini Gen4)</td><td>Sidder i adapteren mellem standerens udtag og bådens kabel. Måler effekt (W) og tæller energi (kWh). Sender trådløst med Zigbee.</td></tr>
+    <tr><td><b>Zigbee-koordinator</b> (SMLIGHT SLZB-MR1U)</td><td>Modtager Zigbee-signalerne fra målerne. Alle målere er netforsynede og virker også som <i>routere</i>, så de sender signalet videre for hinanden.</td></tr>
+    <tr><td><b>Zigbee2MQTT</b></td><td>Oversætter Zigbee til MQTT-beskeder og opretter målerne automatisk i Home Assistant.</td></tr>
+    <tr><td><b>Home Assistant</b></td><td>Holder den aktuelle værdi for hver måler, fx <code>sensor.elmaaler_001_energy</code>.</td></tr>
+    <tr><td><b>Elmåler-systemet</b> (denne webside)</td><td>Henter alle værdier fra Home Assistant hvert 30. sekund og gemmer en aflæsning pr. måler hvert 15. minut.</td></tr>
+  </tbody>
+</table>
+<div class="info"><b>Navnet er nøglen</b>Nummeret på målerens låg (<b>NR. 001</b>), navnet i Zigbee2MQTT (<code>elmaaler-001</code>),
+  entiteterne i Home Assistant (<code>sensor.elmaaler_001_…</code>) og måler <b>1</b> i elmåler-systemet er den samme måler.
+  Navngiv altid efter nummeret på låget – så passer resten af sig selv.</div>
+
+<h2>Elmåleren</h2>
+<div class="billede">
+  <img src="billeder/maaler-side.png" style="width:85mm;border:none;box-shadow:none">
+  <img src="billeder/maaler-skraa.png" style="width:70mm;border:none;box-shadow:none">
+</div>
+<p>Klubbens elmåler er en adapter med et blåt <b>CEE-stik 16 A / 230 V</b> i den ene ende og et blåt <b>CEE-udtag</b> med klapdæksel i den anden.
+  I den sorte midterdel sidder en <b>Shelly EM Mini Gen4</b>. Låget er mærket med klubbens logo og målerens nummer (<b>Elmåler NR. 001</b>).
+  Adapteren sættes i standerens udtag, og båden sætter sit kabel i adapteren.</p>
+<ul>
+  <li>Hvert udtag på en stander har sin egen måler. Måleren kan flyttes til et andet udtag – så rettes placeringen i <b>System → Måleropsætning</b>.</li>
+  <li>Måleren kan <b>ikke</b> slukke for strømmen – den måler kun.</li>
+  <li>Måleren husker selv sin tællerstand. Mister den forbindelsen, tæller den videre, og forbruget kommer med, når den er tilbage.</li>
+</ul>
+
+<h3>Shelly EM Mini Gen4 – data</h3>
+<table>
+  <tbody>
+    <tr><td style="width:42%">Model</td><td><code>S4EM-001PXCEU16</code></td></tr>
+    <tr><td>Spænding / strøm / effekt</td><td>110–240 V~ 50/60 Hz · 0–16 A · maks. 3840 W</td></tr>
+    <tr><td>Nøjagtighed</td><td>±1 % (spænding og strøm)</td></tr>
+    <tr><td>Eget forbrug</td><td>under 1 W</td></tr>
+    <tr><td>Størrelse / vægt</td><td>29 × 34 × 16 mm · 13 g</td></tr>
+    <tr><td>Temperatur / luftfugtighed</td><td>−20 til 40 °C · 30–70 % RH (ikke kondens)</td></tr>
+    <tr><td>Radio</td><td>Zigbee (op til ca. 100 m inde / 300 m ude), Wi-Fi, Bluetooth, Matter</td></tr>
+    <tr><td>Klemmer</td><td>L og N (forsyning ind), 2 × O (udgang – forbundet internt). 0,5–4 mm², afisolér 6–7 mm, maks. 0,4 Nm</td></tr>
+    <tr><td>Forsikring foran</td><td>Automatsikring B eller C, maks. 16 A</td></tr>
+  </tbody>
+</table>
+<p class="muted" style="font-size:8.5pt;color:#6b7785">Kilde: Shellys dokumentation, shelly.com/blogs/documentation/shelly-em-mini-gen4.</p>
+
+<h3>Ledningsføring i adapteren</h3>
+<ul>
+  <li><b>Stikkets fase (L)</b> → Shelly <b>L</b>.</li>
+  <li><b>Shelly O</b> → <b>udtagets fase (L)</b>. Al strøm til båden løber gennem Shelly'en fra L til O.</li>
+  <li><b>Nul (N)</b> fra stikket → Shelly <b>N</b> og videre til udtagets N (Shelly'en skal bruge N til sin egen forsyning).</li>
+  <li><b>Jord (PE)</b> går direkte fra stik til udtag – ikke gennem Shelly'en.</li>
+</ul>
+<div class="vigtigt"><b>⚠ 230 V</b>Adapterne bygges, åbnes og repareres kun af en elinstallatør eller en elkyndig person – og kun når adapteren ikke sidder i standeren.
+  Shelly'en tåler ikke fugt og kondens: låget og pakningerne skal være tætte, og en adapter, der har været i vand, skal skiftes.</div>
+
+<h2>Opsætning af en ny måler</h2>
+<p>Gøres bedst på værkstedet, <b>før låget skrues på</b>, med adapteren sat i et almindeligt CEE-udtag inden for rækkevidde af Zigbee-nettet.
+  Knappen sidder på Shelly'ens bagside, og den lille LED viser, hvad den laver.</p>
+
+<h3>Trin 1 – Opdatér firmwaren (anbefales)</h3>
+<p>Shelly'en leveres i <i>Matter</i>-tilstand. Zigbee2MQTT anbefaler at opdatere firmwaren over Wi-Fi, før den skiftes til Zigbee – opdatering over Zigbee er ikke altid muligt.</p>
+<ol class="trin">
+  <li>Hold knappen inde i <b>5 sekunder</b> (LED blinker hurtigt). Shelly'en åbner nu sit eget Wi-Fi: <code>ShellyEMMiniG4-XXXXXXXX</code>.</li>
+  <li>Forbind telefon eller pc til dette Wi-Fi (ingen kode) og åbn <code>http://192.168.33.1</code> i browseren.</li>
+  <li>Forbind Shelly'en til et Wi-Fi med internet, og opdatér firmwaren under indstillingerne.</li>
+  <li>Slå Wi-Fi og access point fra igen, når opdateringen er færdig – ellers står der 200 ekstra Wi-Fi-net på havnen.</li>
+</ol>
+
+<h3>Trin 2 – Skift til Zigbee og par måleren</h3>
+<ol class="trin">
+  <li>Åbn Zigbee2MQTT (i Home Assistant: menuen <b>Zigbee2MQTT</b>) og tryk <b>Permit join (All)</b> øverst.</li>
+  <li>Tryk <b>5 gange hurtigt</b> på knappen (ca. ½ sekund mellem trykkene). LED'en holder kort pause med at blinke. Shelly'en skifter til Zigbee og er klar til parring i ca. 2–3 minutter.</li>
+  <li>Måleren dukker op i Zigbee2MQTT som <i>Shelly S4EM-001PXCEU16</i> med et navn som <code>0x8c65a3fffe…</code>. Vent, til den står som færdig (<i>interview successful</i>).</li>
+  <li>Nåede du det ikke: tryk <b>3 gange</b> på knappen for at starte parringen igen.</li>
+  <li>Tryk <b>Disable join</b>, når måleren er parret.</li>
+</ol>
+
+<h3>Trin 3 – Giv måleren det rigtige navn</h3>
+<ol class="trin">
+  <li>Klik på måleren i Zigbee2MQTT → <b>Rename</b> (blyanten).</li>
+  <li>Skriv <code>elmaaler-001</code> – altid tre cifre, samme nummer som på låget.</li>
+  <li>Sæt flueben i <b>Update Home Assistant entity ID</b> og tryk <b>Save</b>.</li>
+  <li>Sæt en mærkat eller skriv nummeret på Shelly'en indeni, før låget skrues på.</li>
+</ol>
+
+<h3>Trin 4 – Tjek</h3>
+<ol class="trin">
+  <li>I Home Assistant under <b>Indstillinger → Enheder og tjenester → Entiteter</b>: søg på <code>elmaaler_001</code>. Der skal være
+    <code>sensor.elmaaler_001_energy</code> (kWh) og <code>sensor.elmaaler_001_power</code> (W).</li>
+  <li>Sæt en belastning på (fx en varmeblæser) og se, at effekten stiger.</li>
+  <li>Efter et minut ses måleren under <b>System → Status</b> i elmåler-systemet. Sæt placering (fx S12-U3) under <b>System → Måleropsætning</b>.</li>
+</ol>
+
+<h3>Nulstil en måler</h3>
+<p>Hold knappen inde i <b>10 sekunder</b> (LED blinker meget hurtigt). Shelly'en går tilbage til fabriksindstillingerne og skal parres igen fra trin 2.
+  Slet først den gamle måler i Zigbee2MQTT. Tællerstanden i Shelly'en kan blive nulstillet – det klarer elmåler-systemet selv (et fald i tællerstanden tælles ikke som forbrug).</p>
+<p>I Zigbee-tilstand kan Shelly'ens eget Wi-Fi (til vedligehold på <code>http://192.168.33.1</code>) åbnes ved at holde knappen inde i 3–5 sekunder. Her kan man også se spænding, strøm og effekt direkte.</p>
+
+<h3>Udskift en defekt måler</h3>
+<ol class="trin">
+  <li>Slet den gamle måler i Zigbee2MQTT (<b>Remove</b>, evt. <i>Force remove</i>).</li>
+  <li>Par den nye som ovenfor og giv den <b>samme navn</b>, fx <code>elmaaler-001</code>. Så fortsætter forbruget på samme måler og samme båd i systemet.</li>
+  <li>Den nye tæller starter fra en anden værdi. Systemet tæller kun forskellen fra aflæsning til aflæsning, så forbruget bliver ikke forkert. Se eventuelt <b>System → Log</b>.</li>
+</ol>
+
+<h2>Opsætning af Home Assistant</h2>
+<p>Home Assistant kører på serveren med disse tilføjelser (Indstillinger → Tilføjelser), eller som Docker-containere:</p>
+<ul>
+  <li><b>Mosquitto broker</b> – MQTT-serveren.</li>
+  <li><b>Zigbee2MQTT</b> – forbinder til SLZB-MR1U.</li>
+  <li><b>MQTT-integrationen</b> i Home Assistant (findes automatisk, når Mosquitto kører).</li>
+</ul>
+
+<h3>Zigbee2MQTT – configuration.yaml</h3>
+<p>De vigtige linjer (resten kan stå som standard):</p>
+<pre style="background:#eef2f5;padding:3mm 4mm;border-radius:6px;font-size:8.6pt;line-height:1.4;break-inside:avoid">homeassistant:
+  enabled: true            # målerne oprettes automatisk i Home Assistant
+mqtt:
+  server: mqtt://core-mosquitto:1883
+serial:
+  port: tcp://192.168.1.50:6638   # SLZB-MR1U's IP-adresse (eksempel)
+  adapter: ember                  # ember = Silicon Labs-radio, zstack = TI-radio
+availability:
+  enabled: true            # VIGTIGT – ellers vises målere aldrig som offline
+  active:
+    timeout: 10            # minutter
+advanced:
+  channel: 25              # vælg en kanal, der ikke støjer med havnens Wi-Fi</pre>
+<ul>
+  <li><b>port/adapter</b>: IP-adresse og port står i SLZB-MR1U's egen webside. Vælg <code>ember</code> eller <code>zstack</code> efter, hvilken radio der er sat op som Zigbee-koordinator.</li>
+  <li><b>availability</b> skal være slået til. Ellers bliver Home Assistant ved med at vise den sidste værdi, og elmåler-systemet sender ingen offline-varsler.</li>
+  <li><b>Kanalen</b> kan ikke skiftes senere uden at parre alle målere igen – vælg den, før der parres.</li>
+</ul>
+
+<h3>Entiteter i Home Assistant</h3>
+<table>
+  <thead><tr><th style="width:48%">Entitet</th><th>Bruges til</th></tr></thead>
+  <tbody>
+    <tr><td><code>sensor.elmaaler_001_energy</code></td><td>Tællerstand i kWh – grundlaget for al afregning</td></tr>
+    <tr><td><code>sensor.elmaaler_001_power</code></td><td>Effekt lige nu i W</td></tr>
+    <tr><td><code>sensor.elmaaler_001_linkquality</code></td><td>Zigbee-signal. Er slået <b>fra</b> som standard – slå den til, hvis signalet skal ses under System → Status</td></tr>
+    <tr><td><code>binary_sensor.zigbee2mqtt_bridge_connection_state</code></td><td>Om Zigbee2MQTT kører – vises under System → Status</td></tr>
+  </tbody>
+</table>
+<p>Hedder entiteterne noget andet, rettes <code>HA_ENERGY_ENTITY</code>, <code>HA_POWER_ENTITY</code> og <code>HA_LQI_ENTITY</code> i <i>.env</i>.</p>
+
+<h3>Adgangstoken til elmåler-systemet</h3>
+<ol class="trin">
+  <li>Opret helst en Home Assistant-bruger <i>elmaaler</i> (ikke administrator) og log ind som den.</li>
+  <li>Klik på brugernavnet nederst til venstre → fanen <b>Sikkerhed</b> → <b>Langtids-adgangstokens</b> → <b>Opret token</b>, navn <code>elmaaler</code>.</li>
+  <li>Kopiér den lange tekst (vises kun én gang) til <code>HA_TOKEN</code> i <i>.env</i>, og sæt <code>HA_URL</code>, fx <code>http://192.168.1.10:8123</code>.</li>
+  <li>Genstart stacken og tjek <b>System → Status</b>: Home Assistant skal stå som OK, og antal målere fundet skal passe.</li>
+</ol>
+
+<h2>Godt Zigbee-net på havnen</h2>
+<ul>
+  <li>Placér SLZB-MR1U højt og centralt, gerne med fri sigt ud over broerne. Er den forbundet med netværkskabel, kan den stå et andet sted end serveren.</li>
+  <li>Målerne videresender for hinanden. De første målere, der parres, skal være dem tættest på koordinatoren – så bygges nettet udefter.</li>
+  <li>Vand, både og metalstandere dæmper signalet. Ligger en måler med svagt signal, kan en ekstra Zigbee-router (fx en Shelly i en stander midt på broen) hjælpe.</li>
+  <li>Tjek signalet under <b>System → Status</b>: målere med svagest signal står øverst.</li>
+</ul>
+
+<h1><span class="nr">6</span><div>Drift og vedligehold</div></h1>
 
 <h2>Opdatering af systemet</h2>
 <p>Programmet ligger i et Docker-image. Efter en ny version skal imaget altid bygges om – ellers kører serveren videre med den gamle kode:</p>
@@ -292,7 +458,7 @@
 <h2>Manualerne på websiden</h2>
 <p>Under <b>Hjælp</b> ser hver bruger de manualer, der passer til rollen: medlemmer ser medlemsmanual og quickguide, havnekontoret også sine egne, og systemadministratoren alle. Manualerne laves om med <code>docs/manual/byg.py</code> (se <code>docs/manual/laes-mig.md</code>) og kommer på serveren ved næste opdatering.</p>
 <h2>Teknisk dokumentation</h2>
-<p>Installation, opsætning af Home Assistant/Zigbee2MQTT, mail, OneDrive-backup og gendannelse står i
+<p>Hardware og Home Assistant: se kapitel 5. Installation, mail, OneDrive-backup og gendannelse står i
   <code>docs/07-elmaaler-installation.md</code> i projektet på GitHub.</p>
 
 </body></html>

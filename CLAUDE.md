@@ -103,6 +103,6 @@ aflæsninger efter 2 år · relæ-målere (Shelly 1PM) hvis udtag skal kunne slu
 
 Tre manualer (medlem, havnekontor, administration) og to quickguides (medlem, havnekontor) som PDF i
 `elmaaler/app/hjaelp/` – vises på websiden under **Hjælp** efter rolle (`HJAELP` i `web.py`; medlemmernes kan åbnes uden
-login, fx fra login-siden). Kilde i `docs/manual/` (`manual-*.html`, `quickguide-*.html`, `billeder/`). Billeder tages
+login, fx fra login-siden). Kilde i `docs/manual/` (`manual-*.html`, `quickguide-*.html`, `billeder/`). Administrationsmanualens kapitel 5 er hardware: elmåleren (CEE-adapter med Shelly EM Mini Gen4, `S4EM-001PXCEU16`, fotos `billeder/maaler-*.png`), parring i Zigbee2MQTT (navn `elmaaler-NNN`) og opsætning af Home Assistant. Billeder tages
 automatisk fra et lokalt testsystem (`testdata.py`, `testsystem.py`, `skaermbilleder.py`), og PDF'erne bygges med
 `byg.py` via Edge – se `docs/manual/laes-mig.md`. Ændres UI'et, så tag billederne igen og byg.
