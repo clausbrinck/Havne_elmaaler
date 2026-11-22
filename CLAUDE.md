@@ -17,7 +17,8 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
   ingen CDN (kører på lokalt net). Grafer: `gr.panel(...)` i `templates/_graf.html` tegnes som SVG af
   `static/app.js` ud fra `/api/forbrug` – Døgn/Uge/Måned/Vinter, bladr med ‹ › eller swipe, tryk på søjle = tooltip.
   Døgn er altid kl. 00–24. Medlemmer (eller `egen=1`) ser kun forbrug fra egne tildelingsperioder.
-- Alt UI og alle tekster/variabelnavne er på dansk. Klublogo: `static/logo.png` (klippet fra et skærmbillede – udskift med original i høj opløsning, når den findes).
+- Alt UI og alle tekster/variabelnavne er på dansk. Klublogo: `static/logo.png` (klippet fra et skærmbillede – udskift med original i høj opløsning, når den findes) –
+  bruges som svagt vandmærke (websiden: `body::before` i style.css; manualer, quickguides og bestyrelsesrapporten), ikke som lille logo i toppen.
 
 ## Filer (elmaaler/app/)
 
