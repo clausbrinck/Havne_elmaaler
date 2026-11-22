@@ -55,3 +55,7 @@ td { padding: 1.5mm 2mm; border-bottom: 1px solid #e3e8ed; vertical-align: top; 
   border: 1.5px solid #0b3a5b; color: #0b3a5b; font-weight: 700; font-size: 9pt; line-height: 5.9mm; text-align: center; }
 .qa h3 { color: #1d2733; }
 .sammen { break-inside: avoid; }
+/* klublogo som svagt vandmærke midt på hver side */
+.vandmaerke { position: fixed; left: 50%; top: 50%; width: 140mm; height: 140mm; transform: translate(-50%, -50%);
+  background: url(../../elmaaler/app/static/logo.png) center / contain no-repeat; opacity: .07; z-index: -1; }
+.forside { position: relative; background: #fff; }   /* dækker vandmærket på forsiden, hvor logoet står stort */

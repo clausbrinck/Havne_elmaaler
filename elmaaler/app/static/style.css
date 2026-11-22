@@ -1,6 +1,6 @@
 :root {
   --hav: #0b3a5b; --hav2: #13557f; --sky: #e8f1f7; --sand: #f7f5f0; --tekst: #1d2733; --graa: #6b7785;
-  --linje: #dde3e9; --ok: #1f8a4c; --adv: #c77d00; --fejl: #c0392b; --kort: #ffffff;
+  --linje: #dde3e9; --ok: #1f8a4c; --adv: #c77d00; --fejl: #c0392b; --kort: rgba(255,255,255,.9);
   --r: 10px;
 }
 * { box-sizing: border-box; }
@@ -144,7 +144,6 @@ label.valg input:checked ~ .til-fra { background: #e3f4ea; color: var(--ok); }
 label.valg:has(input:checked) { border-color: #bfe3cd; background: #f6fcf8; }
 
 /* logo i menulinjen */
-header.top .logo img { width: 40px; height: 40px; border-radius: 50%; background: #fff; padding: 2px; box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
 header.top .logo span { display: flex; flex-direction: column; line-height: 1.15; }
 header.top .logo small { font-weight: 500; font-size: 12px; color: #a9cbe4; letter-spacing: .04em; text-transform: uppercase; }
 
@@ -170,7 +169,6 @@ tr.min-gruppe .her { display: inline-block; white-space: nowrap; font-size: 12px
 .gemt.fejl { color: var(--fejl); background: #fbe7e5; }
 svg.graf text.tom { font-size: 13px; fill: var(--graa); }
 @media (max-width: 640px) {
-  header.top .logo img { width: 34px; height: 34px; }
   .gruppe-boks .pris { font-size: 17px; }
   .gitter.samlet { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
   .samlet .tal { padding: 8px 10px; } .samlet .tal .v { font-size: 17px; } .samlet .tal .l { font-size: 11px; line-height: 1.3; }
@@ -185,3 +183,9 @@ a.kort.hjaelp > span:nth-child(2) { flex: 1; }
 a.kort.hjaelp strong { display: block; color: var(--hav); }
 a.kort.hjaelp .muted { display: block; }
 a.kort.hjaelp .pdf { font-size: 11px; font-weight: 700; color: #fff; background: var(--fejl); border-radius: 4px; padding: 1px 6px; }
+
+/* Klublogo som svagt vandmærke midt på siden (bag indholdet) */
+body::before { content: ""; position: fixed; z-index: 0; pointer-events: none; left: 50%; top: 55%;
+  width: min(78vmin, 620px); aspect-ratio: 1; transform: translate(-50%, -50%);
+  background: url(logo.png) center / contain no-repeat; opacity: .07; }
+header.top, main { position: relative; z-index: 1; }

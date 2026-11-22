@@ -10,7 +10,7 @@ body { margin: 0; font: 9.6pt/1.42 "Segoe UI", Arial, sans-serif; color: #1d2733
 .top .adr { text-align: right; font-size: 8.5pt; color: #bcd6ea; line-height: 1.35; }
 .top .adr b { font-size: 10pt; color: #fff; display: inline; }
 .gitter { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
-.trin { border: 1px solid #dde3e9; border-radius: 3mm; padding: 3.2mm 3.6mm; break-inside: avoid; background: #fff; }
+.trin { border: 1px solid #dde3e9; border-radius: 3mm; padding: 3.2mm 3.6mm; break-inside: avoid; background: rgba(255,255,255,.75); }
 .trin.bred { grid-column: 1 / -1; }
 .trin h2 { display: flex; align-items: center; gap: 2.5mm; margin: 0 0 2mm; font-size: 11.5pt; color: #0b3a5b; line-height: 1.2; }
 .trin h2 .nr { display: inline-flex; width: 7.5mm; height: 7.5mm; border-radius: 50%; background: #0b3a5b; color: #fff;
@@ -40,3 +40,6 @@ td { padding: 1mm 1.5mm; border-bottom: 1px solid #e3e8ed; vertical-align: top; 
 .fod { margin-top: 4mm; font-size: 8pt; color: #6b7785; text-align: center; }
 .trin .side.stor img { width: 92mm; }
 .trin .side.hoej img { width: 56mm; }
+/* klublogo som svagt vandmærke midt på hver side */
+.vandmaerke { position: fixed; left: 50%; top: 50%; width: 140mm; height: 140mm; transform: translate(-50%, -50%);
+  background: url(../../elmaaler/app/static/logo.png) center / contain no-repeat; opacity: .07; z-index: -1; }

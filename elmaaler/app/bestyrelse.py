@@ -145,7 +145,7 @@ def pdf(d):
     logo = Image.open(LOGO).convert("RGBA")
     svag = logo.copy()
     svag.putalpha(svag.getchannel("A").point(lambda a: int(a * 0.07)))
-    logo_r, svag_r = ImageReader(logo), ImageReader(svag)
+    svag_r = ImageReader(svag)
 
     def st(navn, **kw):
         base = dict(fontName="Helvetica", fontSize=9, leading=12, textColor=TEKST)
@@ -166,13 +166,12 @@ def pdf(d):
         canv.saveState()
         canv.drawImage(svag_r, (B - 125 * mm) / 2, (H - 125 * mm) / 2, 125 * mm, 125 * mm, mask="auto")
         top = H - 14 * mm
-        canv.drawImage(logo_r, V, top - 13 * mm, 13 * mm, 13 * mm, mask="auto")
         canv.setFillColor(HAV)
         canv.setFont("Helvetica-Bold", 13)
-        canv.drawString(V + 16 * mm, top - 6 * mm, config.KLUB_NAVN)
+        canv.drawString(V, top - 6 * mm, config.KLUB_NAVN)
         canv.setFillColor(GRAA)
         canv.setFont("Helvetica", 7.5)
-        canv.drawString(V + 16 * mm, top - 10.5 * mm, "ELMÅLERE · MÅNEDSRAPPORT TIL BESTYRELSEN")
+        canv.drawString(V, top - 10.5 * mm, "ELMÅLERE · MÅNEDSRAPPORT TIL BESTYRELSEN")
         canv.setFillColor(HAV)
         canv.setFont("Helvetica-Bold", 16)
         canv.drawRightString(B - V, top - 6.5 * mm, d["titel"])
@@ -223,7 +222,8 @@ def pdf(d):
                           fillColor=GRAA, textAnchor="end"))
         bw = (bredde - v0) / max(len(vaerdier), 1)
         for i, v in enumerate(vaerdier):
-            dr.add(Rect(v0 + i * bw + bw * 0.15, bund, bw * 0.7, ph * v / mx, fillColor=BLAA, strokeColor=None,
+            if v > 0:
+                dr.add(Rect(v0 + i * bw + bw * 0.15, bund, bw * 0.7, ph * v / mx, fillColor=BLAA, strokeColor=None,
                         rx=1, ry=1))
             if i % hver == 0:
                 dr.add(String(v0 + i * bw + bw / 2, 2, etiketter[i], fontName="Helvetica", fontSize=6.5,
