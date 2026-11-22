@@ -1,0 +1,48 @@
+{# Enkel visning af Min side: det basale pr. båd. Avanceret visning = resten af min_side.html #}
+{% import "_graf.html" as gr %}
+<div data-live="{{ url_for('api_live') }}" class="enkel">
+{% for k in kort %}
+<div class="kort enkel-kort">
+  <div class="maaler-hoved">
+    <h2>{{ k.t.baad or 'Måler %03d' % k.t.maaler_id }}</h2>
+    {% if k.st.sidst_set %}{{ gr.status('online' if k.st.tilgaengelig else 'offline', k.t.maaler_id) }}
+    {% else %}<span class="badge ukendt">afventer første måling</span>{% endif %}
+  </div>
+  <div class="muted">Måler {{ '%03d' % k.t.maaler_id }}{% if k.t.placering %} · {{ k.t.placering }}{% endif %}</div>
+
+  {% if k.st.sidst_set and not k.st.tilgaengelig %}
+  <div class="besked alarm">⚠ <strong>Ingen forbindelse til måleren.</strong> Tjek at stikket sidder i, og at der er strøm på standeren.</div>
+  {% endif %}
+
+  <div class="nu">
+    <div class="nu-tal"><span data-effekt="{{ k.t.maaler_id }}">{{ k.st.effekt_w | dk(0) if k.st.tilgaengelig else '–' }}</span> <small>W</small></div>
+    <div class="muted">bruger lige nu</div>
+    <div data-effekt-info="{{ k.t.maaler_id }}" data-w="{{ k.st.effekt_w if k.st.tilgaengelig else '' }}"></div>
+  </div>
+
+  <div class="enkel-tal">
+    <div><span class="v">{{ k.i_dag | dk(1) }}</span> kWh<span class="l">i dag</span></div>
+    <div><span class="v">{{ k.m.kwh | dk(1) }}</span> kWh<span class="l">i {{ maaned | maaned_navn }}</span></div>
+    {% if afregnes %}<div><span class="v">{{ k.m.pris | dk(0) }}</span> kr<span class="l">pris indtil nu</span></div>{% endif %}
+  </div>
+
+  {% if afregnes and k.m.graense %}
+    {% set pct = [k.m.kwh / k.m.graense * 100, 100] | min %}
+    <div class="bar {{ 'adv' if pct >= 90 }}"><div style="width:{{ pct }}%"></div></div>
+    <div class="muted">{{ gr.gruppe(k.m.gruppe, k.m.label) }} – {{ k.m.kwh | dk(0) }} af {{ k.m.graense }} kWh.
+      Derefter {{ k.m.naeste.pris | dk(0) }} kr for måneden.</div>
+  {% elif not afregnes %}
+    <div class="muted">{{ maaned | maaned_navn | capitalize }} ligger uden for vinterafregningen.</div>
+  {% endif %}
+</div>
+{% endfor %}
+</div>
+
+{% if kort %}
+<form method="post" action="{{ url_for('min_visning') }}" class="kort enkel-mere">
+  <input type="hidden" name="csrf" value="{{ csrf() }}">
+  <div><strong>Vil du se mere?</strong>
+    <span class="muted">Grafer for døgn, uge, måned og vinter · e-mails · forbrugsrapport · tidligere måneder · prisliste</span></div>
+  <button name="visning" value="avanceret">Avanceret visning ›</button>
+</form>
+{% endif %}

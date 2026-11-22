@@ -59,6 +59,10 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── Zigbee2MQTT ── MQTT ── Hom
   havnekontoret kan ikke ændre en admins konto.
 - **Fjern måler fra bruger** = afslut tildelingen pr. dato (`_fjern_tildeling`); historik bevares. Siden
   `/kontor/ubrugte` viser tildelte målere uden forbrug i N dage, så de kan fjernes samlet.
+- **Min side – enkel/avanceret visning:** `brugere.visning` (standard `enkel`), skiftes med `/min-side/visning`.
+  Enkel = `templates/_min_side_enkel.html` (status, effekt, i dag/måned/pris, bjælke); avanceret = resten af `min_side.html`.
+- **Mørk visning:** følger telefonens/computerens indstilling via `@media (prefers-color-scheme: dark)` sidst i `style.css`
+  (farvevariabler + overstyring af faste farver). Nye faste farver i CSS skal også have en mørk variant.
 - **Forbrugsrapport på mail:** Min side → `/min-side/rapport` (`rapport.bruger_periode`), tekst + CSV pr. dag,
   maks 5 pr. bruger pr. time.
 - **Månedslås:** den 1. kl. 00:20 fryses forrige måned i `maanedsopgoerelser`; kan genberegnes manuelt.

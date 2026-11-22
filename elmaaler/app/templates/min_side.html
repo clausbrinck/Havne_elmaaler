@@ -2,11 +2,20 @@
 {% import "_graf.html" as gr %}
 {% block titel %}Min side{% endblock %}
 {% block indhold %}
-<h1>Hej {{ (bruger.navn or '').split(' ')[0] or bruger.email }}</h1>
+<div class="side-hoved">
+  <h1>Hej {{ (bruger.navn or '').split(' ')[0] or bruger.email }}</h1>
+  <form method="post" action="{{ url_for('min_visning') }}" class="visning-skift">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    {% if enkel %}<button class="sek lille" name="visning" value="avanceret">Avanceret visning ›</button>
+    {% else %}<button class="sek lille" name="visning" value="enkel">‹ Enkel visning</button>{% endif %}
+  </form>
+</div>
 
 {% if not kort %}
 <div class="kort"><p>Du har ingen måler tildelt i øjeblikket. Kontakt havnekontoret, hvis det er en fejl.</p></div>
 {% endif %}
+
+{% if enkel %}{% include "_min_side_enkel.html" %}{% else %}
 
 {% if kort | length > 1 %}
 <div class="gitter samlet">
@@ -152,4 +161,5 @@
   </table></div>
   {% else %}<p class="muted">Ingen afsluttede måneder endnu.</p>{% endif %}
 </div>
+{% endif %}
 {% endblock %}

@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS brugere (
     mail_dag      INTEGER NOT NULL DEFAULT 0,
     mail_uge      INTEGER NOT NULL DEFAULT 0,
     mail_maaned   INTEGER NOT NULL DEFAULT 1,
-    mail_offline  INTEGER NOT NULL DEFAULT 1
+    mail_offline  INTEGER NOT NULL DEFAULT 1,
+    visning       TEXT NOT NULL DEFAULT 'enkel'     -- Min side: enkel | avanceret
 );
 
 CREATE TABLE IF NOT EXISTS tildelinger (
@@ -192,6 +193,8 @@ def _migrer(c):
         c.execute("ALTER TABLE maanedsopgoerelser ADD COLUMN baad TEXT NOT NULL DEFAULT ''")
         c.execute("UPDATE maanedsopgoerelser SET baad=COALESCE("
                   "(SELECT b.baad FROM brugere b WHERE b.id=maanedsopgoerelser.bruger_id), '')")
+    if "visning" not in kolonner("brugere"):
+        c.execute("ALTER TABLE brugere ADD COLUMN visning TEXT NOT NULL DEFAULT 'enkel'")
 
 
 def hent(noegle):

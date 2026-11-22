@@ -7,7 +7,9 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo.png') }}">
-<meta name="theme-color" content="#0b3a5b">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0b3a5b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08192a" media="(prefers-color-scheme: dark)">
 </head>
 <body>
 <header class="top"><div class="indre">

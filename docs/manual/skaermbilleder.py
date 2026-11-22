@@ -73,6 +73,10 @@ BILLEDER = [
      [["#email", "", 1], ["#kode", "", 2], ["button", "Log ind", 3], ["a", "Glemt adgangskode", 4]]),
     ("glemt", None, "/glemt", MOBIL, "", [["header.top", ""], [".kort", ""]], [["input[name=email]", "", 1], ["button", "Send link", 2]]),
     # ------------------------------------------------------------ medlem
+    ("minside-enkel", "hans", "/min-side", MOBIL, "", None,
+     [[".enkel-kort .badge", "", 1, "h"], [".enkel-kort .besked", "", 2], [".enkel-kort .enkel-tal", "", 3],
+      [".enkel-kort .bar", "", 4], [".visning-skift button", "", 5, "h"]]),
+    ("minside-enkel-moerk", "hans", "/min-side", MOBIL, "", None, []),
     ("minside-top", "hans", "/min-side", MOBIL, HAVOERN, None,
      [[".samlet", "", 1], [".baad-faner", "", 2], [".maalerkort .maaler-hoved .badge", "", 3, "h"],
       [".maalerkort .tal.effekt", "", 4]]),
@@ -168,6 +172,9 @@ def main(kun=None):
             if kun and navn not in kun:
                 continue
             e.størrelse(w, h, mobil)
+            # billeder der slutter på "-moerk" tages med telefonens mørke tilstand
+            e.kald("Emulation.setEmulatedMedia",
+                   features=[{"name": "prefers-color-scheme", "value": "dark" if navn.endswith("-moerk") else "light"}])
             if bruger != logget_ind:
                 e.kald("Network.clearBrowserCookies")
                 if bruger:
@@ -182,6 +189,14 @@ def main(kun=None):
                 url = e.js("Array.from(document.querySelectorAll('a')).find(a=>a.textContent.includes('Hans Hansen'))"
                            ".getAttribute('href')")
             e.gaa(B + url, vent=1.8)
+            if url == "/min-side":
+                # Min side: "minside-enkel..." i enkel visning, øvrige "minside-..." i avanceret visning
+                oensket = "enkel" if navn.startswith("minside-enkel") else "avanceret"
+                knap = e.js("(document.querySelector('.visning-skift button')||{}).value")
+                nu_vist = "enkel" if knap == "avanceret" else "avanceret"
+                if nu_vist != oensket:
+                    e.js("document.querySelector('.visning-skift button').click()")
+                    time.sleep(1.8)
             e.js(MARKER_JS)
             if forbered:
                 e.js(f"(async () => {{ {forbered} }})()")

@@ -290,7 +290,17 @@ def min_side():
                            historik=forbrug.bruger_historik(g.bruger["id"]),
                            kategorier=forbrug.kategorier(), afregnes=forbrug.afregnes(maaned),
                            i_dag=i_dag().isoformat(), maaned_start=i_dag().replace(day=1).isoformat(),
-                           smtp=mailer.konfigureret())
+                           smtp=mailer.konfigureret(), enkel=g.bruger["visning"] != "avanceret")
+
+
+@app.route("/min-side/visning", methods=["POST"])
+@login_kraevet
+def min_visning():
+    """Skift mellem enkel og avanceret visning af Min side (gemmes på brugeren)."""
+    v = "avanceret" if request.form.get("visning") == "avanceret" else "enkel"
+    with db.db() as c:
+        c.execute("UPDATE brugere SET visning=? WHERE id=?", (v, g.bruger["id"]))
+    return redirect(url_for("min_side"))
 
 
 @app.route("/min-side/emails", methods=["POST"])

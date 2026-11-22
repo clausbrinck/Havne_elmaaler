@@ -189,3 +189,61 @@ body::before { content: ""; position: fixed; z-index: 0; pointer-events: none; l
   width: min(78vmin, 620px); aspect-ratio: 1; transform: translate(-50%, -50%);
   background: url(logo.png) center / contain no-repeat; opacity: .07; }
 header.top, main { position: relative; z-index: 1; }
+
+/* ---------------------------------------------------------------- Min side: enkel visning */
+.side-hoved { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.side-hoved h1 { margin: 0; }
+.visning-skift { margin: 0; }
+.enkel-kort h2 { margin: 0; font-size: 20px; }
+.enkel-kort .nu { text-align: center; margin: 14px 0 10px; }
+.enkel-kort .nu-tal { font-size: 52px; font-weight: 700; color: var(--hav); line-height: 1; }
+.enkel-kort .nu-tal small { font-size: 20px; color: var(--graa); font-weight: 500; }
+.enkel-kort [data-effekt-info] { max-width: 260px; margin: 8px auto 0; }
+.enkel-kort .nu .forklaring { font-size: 14px; }
+.enkel-tal { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin: 12px 0 8px;
+  border-top: 1px solid var(--linje); padding-top: 12px; text-align: center; }
+.enkel-tal > div { font-size: 13px; color: var(--graa); }
+.enkel-tal .v { font-size: 24px; font-weight: 700; color: var(--hav); line-height: 1.2; }
+.enkel-tal .l { display: block; font-size: 13px; color: var(--graa); }
+.enkel-mere { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.enkel-mere .muted { display: block; }
+
+/* ---------------------------------------------------------------- mørk visning (følger telefonens/computerens indstilling) */
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark;
+    --hav: #8cc4ec; --hav2: #3d8fd0; --sky: #172a3a; --sand: #0e151c; --tekst: #e2e8ee; --graa: #9aa8b5;
+    --linje: #2a3744; --ok: #4cc07e; --adv: #e0a030; --fejl: #ef6b5b; --kort: rgba(23,32,42,.92); }
+  header.top { background: linear-gradient(180deg, #0c2234, #08192a); box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  a { color: #7fbbe8; }
+  th { background: #16212c; }
+  tr:hover td { background: #1a2632; }
+  input[type=text], input[type=email], input[type=password], input[type=date], input[type=number], input[type=search], select, textarea {
+    background: #101a23; border-color: #33424f; color: var(--tekst); }
+  button.sek, .knap.sek, .segment button, .baad-faner button, .faner a { background: #16212c; color: #8cc4ec; }
+  button.fare { background: #16212c; }
+  .segment button.aktiv, .baad-faner button.aktiv, .faner a.aktiv { background: var(--hav2); color: #fff; }
+  .badge.online, label.valg input:checked ~ .til-fra, .gemt { background: #163826; color: #6fd79a; }
+  .badge.offline, .gemt.fejl { background: #43201c; color: #ff8a7a; }
+  .badge.ukendt, label.valg .til-fra { background: #24303b; color: var(--graa); }
+  .badge.g1 { background: #163826; color: #7fdca5; } .badge.g2 { background: #172f47; color: #8ec2ee; }
+  .badge.g3 { background: #3d3115; color: #f0c96a; } .badge.g4 { background: #43291a; color: #f5a96a; }
+  .badge.g5 { background: #47201d; color: #f59184; } .badge.g6 { background: #3c1d39; color: #e597dc; }
+  .badge.kontor { background: #2f6fa1; }
+  .flash.ok { background: #163826; color: #8fe0b0; border-color: #24563a; }
+  .flash.fejl, .besked.alarm { background: #3a1c19; color: #ffb3a8; border-color: #6a2e27; }
+  .besked.alarm { border-left-color: var(--fejl); }
+  .besked.info { background: #18232e; }
+  .bar, .lqi { background: #26333f; }
+  code { background: #1c2833; }
+  .gruppe-boks { background: rgba(16,26,35,.7); }
+  tr.min-gruppe td { background: #172a3a; }
+  .mailadresse { border-color: #2a4458; }
+  .samlet .tal { border-color: #2a4458; }
+  label.valg:has(input:checked) { background: #13251b; border-color: #24563a; }
+  svg.graf .s { fill: #3d8fd0; } svg.graf .s.nu { fill: #2a5e86; } svg.graf .s.valgt { fill: #9fd0f5; }
+  .tip { background: #e2e8ee; color: #0e151c; box-shadow: 0 3px 12px rgba(0,0,0,.6); }
+  .tip::after { border-top-color: #e2e8ee; }
+  .tip button { background: #0e151c; color: #8cc4ec; border-color: #0e151c; }
+  body::before { opacity: .05; }
+  .login-logo { box-shadow: 0 2px 10px rgba(0,0,0,.5); }
+}
