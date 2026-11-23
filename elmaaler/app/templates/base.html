@@ -25,7 +25,7 @@
     {% if er_admin %}
       <a href="{{ url_for('system_status') }}" class="{{ 'aktiv' if ep.startswith('system_') }}">System</a>
     {% endif %}
-    <a href="{{ url_for('min_side') }}" class="{{ 'aktiv' if ep == 'min_side' }}">Min side</a>
+    {% if not er_kontor %}<a href="{{ url_for('min_side') }}" class="{{ 'aktiv' if ep == 'min_side' }}">Min side</a>{% endif %}
     <a href="{{ url_for('min_konto') }}" class="{{ 'aktiv' if ep == 'min_konto' }}">Konto Administration</a>
     <a href="{{ url_for('hjaelp') }}" class="{{ 'aktiv' if ep == 'hjaelp' }}">Hjælp</a>
   </nav>

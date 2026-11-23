@@ -4,7 +4,7 @@
 <h1>Konto Administration</h1>
 <div class="mailadresse stor">
   <div><span class="muted">Din e-mail – bruges både til log ind og til alle e-mails fra elmålerne</span><strong>{{ bruger.email }}</strong></div>
-  <a href="{{ url_for('min_side') }}#e-mail" class="knap sek lille">Vælg hvilke e-mails du får</a>
+  {% if not er_kontor %}<a href="{{ url_for('min_side') }}#e-mail" class="knap sek lille">Vælg hvilke e-mails du får</a>{% endif %}
 </div>
 <div class="gitter2">
   <div class="kort">
@@ -38,7 +38,7 @@
       <label class="check"><input type="checkbox" name="mail_maaned" {{ 'checked' if bruger.mail_maaned }}> <span>Månedsopgørelse med CSV-fil vedhæftet</span></label>
       <button>Gem</button>
     </form>
-    <p class="muted">Sendes til {{ bruger.email }}. Har du selv en måler, vælges mails om dit eget forbrug under Min side.</p>
+    <p class="muted">Sendes til {{ bruger.email }}.</p>
   </div>
   {% endif %}
 </div>

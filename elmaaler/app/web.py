@@ -282,6 +282,8 @@ def hjaelp_fil(navn):
 @app.route("/min-side")
 @login_kraevet
 def min_side():
+    if er_kontor(g.bruger):      # Min side er kun for medlemmer; havnekontor og admin bruger Overblik
+        return redirect(url_for("kontor"))
     maaned = maaned_str(i_dag())
     with db.db() as c:
         tild = forbrug.aktive_tildelinger(c, bruger_id=g.bruger["id"])
