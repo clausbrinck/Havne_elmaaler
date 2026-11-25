@@ -865,7 +865,9 @@ def kontor_vinter_csv():
 def system_status():
     with db.db() as c:
         maalere = c.execute("SELECT m.id, m.placering, m.aktiv, s.* FROM maalere m JOIN status s ON s.maaler_id=m.id "
-                            "ORDER BY s.tilgaengelig, s.linkquality IS NULL, s.linkquality, m.id").fetchall()
+                            # offline først, så online (svagest signal øverst), ukendte (aldrig set) sidst
+                            "ORDER BY CASE WHEN s.tilgaengelig THEN 1 WHEN s.sidst_set THEN 0 ELSE 2 END, "
+                            "s.linkquality IS NULL, s.linkquality, m.id").fetchall()
         brugere = c.execute("SELECT * FROM brugere ORDER BY sidste_login DESC").fetchall()
         haend = c.execute("SELECT * FROM haendelser ORDER BY ts DESC LIMIT 30").fetchall()
     lqi = [m["linkquality"] for m in maalere if m["linkquality"] is not None and m["tilgaengelig"]]
