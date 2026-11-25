@@ -85,11 +85,26 @@ class HomeAssistant:
                 d["lqi"] = int(v) if v is not None else None
             elif art in ("strom", "volt", "hz"):
                 v = _tal(tilstand)
-                if v is not None and enhed in ("mA", "mV"):
+                if v is not None and enhed in ("mA", "mV", "mHz"):
                     v /= 1000
-                d[art] = v
+                d[art] = _rimelig(art, v)
         _diagnose(alle, self.kort, data)
         return data
+
+
+# Nogle målere melder fx frekvens i mHz (50000) eller 0,1 Hz (500) uden at enheden står i HA.
+# Værdien skaleres ned, til den ligger i det rimelige område; ellers kasseres den.
+RIMELIG = {"hz": (40, 70), "volt": (150, 300), "strom": (0, 40)}
+
+
+def _rimelig(art, v):
+    if v is None:
+        return None
+    lav, hoej = RIMELIG[art]
+    for faktor in ((1,) if art == "strom" else (1, 10, 100, 1000)):
+        if lav <= v / faktor <= hoej:
+            return round(v / faktor, 3)
+    return None
 
 
 def _ligner_elmaaler(tekst):
