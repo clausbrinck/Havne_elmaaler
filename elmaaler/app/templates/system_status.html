@@ -17,6 +17,33 @@
 </div>
 {% if ha.fejl %}<div class="flash fejl">Seneste fejl: {{ ha.fejl }}</div>{% endif %}
 
+{% if ha.ikke_genkendt or ha.uden_taeller or inaktive %}
+<div class="kort">
+  <h2>Målere der ikke bliver fundet</h2>
+  {% if inaktive %}
+  <p><b>Set i Home Assistant, men slået fra i måleropsætningen:</b>
+    {% for nr in inaktive %}{{ '%03d' % nr }}{{ ', ' if not loop.last }}{% endfor %}.
+    De vises ikke i listen nedenfor. Sæt flueben i <i>Aktiv</i> under <a href="{{ url_for('system_maalere') }}">Målere</a>.</p>
+  {% endif %}
+  {% if ha.uden_taeller %}
+  <p><b>Fundet, men uden tællerstand:</b>
+    {% for nr in ha.uden_taeller %}{{ '%03d' % nr }}{{ ', ' if not loop.last }}{% endfor %}.
+    Systemet bruger kun en måler, når <code>{{ config.HA_ENERGY_ENTITY.split(',')[0].replace('{nr:03d}', 'NNN') }}</code> findes og har en værdi
+    – tjek i Home Assistant, at den sensor findes, er slået til og hedder sådan.</p>
+  {% endif %}
+  {% if ha.ikke_genkendt %}
+  <p><b>Sensorer i Home Assistant, der ligner en elmåler, men har et andet navn end ventet</b>
+    (skal være fx <code>{{ config.HA_ENERGY_ENTITY.split(',')[0].format(nr=5) }}</code> – tre cifre, uden mellemrum og å).
+    Ret entitets-id'et i Home Assistant (Indstillinger → Enheder → enheden → sensoren → tandhjulet), eller omdøb enheden
+    til <code>Elmaaler005</code> og svar <i>ja</i> til at omdøbe entitets-id'erne.</p>
+  <div class="tabel-wrap" style="max-height:320px;overflow-y:auto"><table>
+    <thead><tr><th>Entitets-id</th><th>Navn i HA</th><th>Værdi</th></tr></thead>
+    <tbody>{% for u in ha.ikke_genkendt %}<tr><td><code>{{ u.entity_id }}</code></td><td>{{ u.navn }}</td><td>{{ u.state }}</td></tr>{% endfor %}</tbody>
+  </table></div>
+  {% endif %}
+</div>
+{% endif %}
+
 <div class="gitter2">
 <div class="kort">
   <h2>Zigbee-målere</h2>

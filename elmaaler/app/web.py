@@ -885,7 +885,9 @@ def system_status():
         "aldrig": [b for b in brugere if b["aktiv"] and not b["sidste_login"]],
         "uden_kode": sum(1 for b in brugere if b["aktiv"] and not b["pw_hash"]),
     }
-    return render_template("system_status.html", maalere=maalere, ha=collector.STATUS, haend=haend,
+    # set i Home Assistant, men slået fra i måleropsætningen – vises derfor ikke i listen
+    inaktive = [m["id"] for m in maalere if not m["aktiv"] and m["sidst_set"]]
+    return render_template("system_status.html", maalere=maalere, ha=collector.STATUS, haend=haend, inaktive=inaktive,
                            login=login, brugere=brugere[:25], config=config, net=net,
                            lqi={"min": min(lqi, default=None), "snit": sum(lqi) / len(lqi) if lqi else None,
                                 "svage": sum(1 for x in lqi if x < 40)})

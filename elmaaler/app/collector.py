@@ -55,9 +55,10 @@ class HomeAssistant:
     def hent(self):
         r = self.s.get(f"{config.HA_URL}/api/states", timeout=20)
         r.raise_for_status()
+        alle = r.json()
         data = {}
         # bedste bud først, så et reserve-navn aldrig overskriver det foretrukne
-        states = sorted((st for st in r.json() if st.get("entity_id") in self.kort),
+        states = sorted((st for st in alle if st.get("entity_id") in self.kort),
                         key=lambda st: -self.kort[st["entity_id"]][2])
         for st in states:
             eid = st["entity_id"]
@@ -87,7 +88,26 @@ class HomeAssistant:
                 if v is not None and enhed in ("mA", "mV"):
                     v /= 1000
                 d[art] = v
+        _diagnose(alle, self.kort, data)
         return data
+
+
+def _ligner_elmaaler(tekst):
+    t = tekst.lower().replace("å", "aa")
+    return "elmaal" in t or "elmal" in t
+
+
+def _diagnose(alle, kort, data):
+    """Til System → Status: sensorer i HA, der ligner en elmåler, men ikke matcher navnemønstret,
+    og målere hvor andre sensorer blev fundet, men ikke tællerstanden (summation_delivered)."""
+    ukendte = []
+    for st in alle:
+        eid = st.get("entity_id") or ""
+        navn = (st.get("attributes") or {}).get("friendly_name") or ""
+        if eid.startswith("sensor.") and eid not in kort and (_ligner_elmaaler(eid) or _ligner_elmaaler(navn)):
+            ukendte.append({"entity_id": eid, "navn": navn, "state": st.get("state")})
+    STATUS["ikke_genkendt"] = sorted(ukendte, key=lambda u: u["entity_id"])[:200]
+    STATUS["uden_taeller"] = sorted(nr for nr, d in data.items() if d["energi"] is None)
 
 
 class Simulator:

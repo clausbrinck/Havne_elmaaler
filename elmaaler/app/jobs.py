@@ -145,7 +145,10 @@ def tjek_offline():
         tekst = f"Følgende målere har været uden forbindelse i mere end {minutter} minutter:\n\n" + "\n".join(
             f"   Måler {s['maaler_id']:03d} {s['placering'] or '':8} offline siden {fmt_tid(s['offline_siden'])} – {hvem}"
             for s, hvem in kontor_liste)
-        mailer.send(_kontor_modtagere("mail_offline"), f"Elmålere: {len(kontor_liste)} uden forbindelse", tekst)
+        numre = [f"{s['maaler_id']:03d}" for s, _ in kontor_liste]
+        emne = ("Elmåler " if len(numre) == 1 else "Elmålere ") + ", ".join(numre[:10]) \
+            + (f" m.fl. ({len(numre)} i alt)" if len(numre) > 10 else "") + " uden forbindelse"
+        mailer.send(_kontor_modtagere("mail_offline"), emne, tekst)
 
     # Ingen forbindelse til Home Assistant overhovedet
     fejl = collector.STATUS.get("ha_fejl_siden")
