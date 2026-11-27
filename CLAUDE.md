@@ -63,6 +63,12 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── ZHA (Zigbee Home Automation) ─�
   Enkel = `templates/_min_side_enkel.html` (status, effekt, i dag/måned/pris, bjælke); avanceret = resten af `min_side.html`.
 - **Mørk visning:** følger telefonens/computerens indstilling via `@media (prefers-color-scheme: dark)` sidst i `style.css`
   (farvevariabler + overstyring af faste farver). Nye faste farver i CSS skal også have en mørk variant.
+- **Alarmer** (`jobs.tjek_alarmer()` efter hvert poll; tilstand i hukommelsen, så en genstart kan give én mail ekstra).
+  Medlemmets egne pr. måler/tildeling, sat på Min side (avanceret, `/min-side/alarmer`), NULL = fra:
+  `effekt_graense_w` (over grænsen i `effekt_alarm_minutter`, ny mail først under 90 % og højst 1/time – fx nogen bruger
+  medlemmets udtag) · `dag_graense_kwh` (døgnforbrug fra kl. 00, 1/dag via `varsler_sendt`) · `stop_alarm_min` (under 5 W
+  i N min, kun efter der er set forbrug siden opstart; mail igen når strømmen er tilbage). Havnekontoret: overbelastning
+  (≥ `overlast_a` A i `overlast_minutter`, højst 1 pr. 6 t pr. udtag) til modtagerne af offline-mails.
 - **Forbrugsrapport på mail:** Min side → `/min-side/rapport` (`rapport.bruger_periode`), tekst + CSV pr. dag,
   maks 5 pr. bruger pr. time.
 - **Månedslås:** den 1. kl. 00:20 fryses forrige måned i `maanedsopgoerelser`; kan genberegnes manuelt.

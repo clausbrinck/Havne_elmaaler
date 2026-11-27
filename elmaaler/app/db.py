@@ -66,7 +66,10 @@ CREATE TABLE IF NOT EXISTS tildelinger (
     start_ts    INTEGER NOT NULL,
     slut_ts     INTEGER,
     oprettet    INTEGER,
-    baad        TEXT NOT NULL DEFAULT ''     -- båden på denne måler (en bruger kan have flere både)
+    baad        TEXT NOT NULL DEFAULT '',    -- båden på denne måler (en bruger kan have flere både)
+    effekt_graense_w INTEGER,                -- alarm: effekt over grænsen (W)          NULL = fra
+    dag_graense_kwh  REAL,                   -- alarm: døgnforbrug over grænsen (kWh)   NULL = fra
+    stop_alarm_min   INTEGER                 -- alarm: forbruget stoppet i så mange min NULL = fra
 );
 CREATE INDEX IF NOT EXISTS ix_tild_maaler ON tildelinger(maaler_id);
 CREATE INDEX IF NOT EXISTS ix_tild_bruger ON tildelinger(bruger_id);
@@ -141,6 +144,9 @@ STANDARD_INDSTILLINGER = {
     "afregningsmaaneder": [11, 12, 1, 2, 3],
     "advarsel_procent": 90,          # advar når forbruget når X % af gruppens grænse
     "offline_minutter": 60,          # varsel når måler har været væk så længe
+    "effekt_alarm_minutter": 2,      # strømalarm: effekten skal være over grænsen så længe før der sendes mail
+    "overlast_a": 15,                # havnekontoret advares, når et udtag trækker mindst så mange A …
+    "overlast_minutter": 10,         # … i så mange minutter
     "mail_tidspunkt": "06:00",       # daglige/ugentlige/månedlige opgørelser
     "ekstra_kontor_emails": "",      # fx kasserer – modtager kontor-mails
     "ekstra_mail_offline": True,
@@ -199,6 +205,9 @@ def _migrer(c):
     for kol in ("strom_a", "spaending_v", "frekvens_hz"):
         if kol not in kolonner("status"):
             c.execute(f"ALTER TABLE status ADD COLUMN {kol} REAL")
+    for kol, typ in (("effekt_graense_w", "INTEGER"), ("dag_graense_kwh", "REAL"), ("stop_alarm_min", "INTEGER")):
+        if kol not in kolonner("tildelinger"):
+            c.execute(f"ALTER TABLE tildelinger ADD COLUMN {kol} {typ}")
     if "visning" not in kolonner("brugere"):
         c.execute("ALTER TABLE brugere ADD COLUMN visning TEXT NOT NULL DEFAULT 'enkel'")
 

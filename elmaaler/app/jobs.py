@@ -4,7 +4,7 @@ import time
 from datetime import timedelta
 
 from . import backup, bestyrelse, collector, config, db, forbrug, mailer, rapport, simulering
-from .tid import nu, lokal, i_dag, maaned_str, forrige_maaned, maaned_navn, fmt_tid
+from .tid import nu, lokal, i_dag, dato_ts, maaned_str, forrige_maaned, maaned_navn, fmt_tid
 
 log = logging.getLogger("jobs")
 
@@ -113,6 +113,186 @@ def tjek_advarsler():
                      f"for hele måneden ({st['prognose_kat']['label']}).\n")
             mailer.send(b["email"], f"Elforbrug: du nærmer dig næste forbrugsgruppe (måler {t['maaler_id']:03d})", tekst)
             db.log("mail", f"Advarsel om næste gruppe sendt til {b['email']} (måler {t['maaler_id']:03d})")
+
+
+# ---------------------------------------------------------------- alarmer (tjekkes efter hvert poll)
+#
+# Medlemmets egne alarmer pr. måler/tildeling (sættes på Min side):
+#   effekt_graense_w – effekten er over grænsen i N minutter (fx nogen bruger medlemmets udtag)
+#   dag_graense_kwh  – døgnforbruget (fra kl. 00) er over grænsen
+#   stop_alarm_min   – forbruget er stoppet (under STOP_W) i så mange minutter (fx varme/affugter
+#                      stoppet eller sikringen om bord slået fra); mail igen, når strømmen er tilbage
+# Havnekontoret: overbelastning – et udtag trækker mindst overlast_a i overlast_minutter.
+# Tilstanden ligger i hukommelsen; efter en genstart kan der i værste fald komme én mail ekstra.
+
+_tilstand = {}            # (art, id) -> dict
+EFFEKT_MAIL_PAUSE = 3600  # højst én strømalarm pr. måler pr. time
+OVERLAST_PAUSE = 6 * 3600
+STOP_W = 5                # under så mange W regnes forbruget for stoppet
+
+
+def _st(art, id_, **std):
+    return _tilstand.setdefault((art, id_), dict(std))
+
+
+def _maaler_navn(r):
+    return (f"Måler {r['maaler_id']:03d}" + (f" ({r['placering']})" if r["placering"] else "")
+            + (f" – {r['baad']}" if r["baad"] else ""))
+
+
+def _mail_medlem(r, emne, tekst, logtekst):
+    if mailer.send(r["email"], emne, f"Hej {r['navn']},\n\n{tekst}\n\nAlarmen kan ændres eller slås fra på Min side.\n"):
+        db.log("mail", f"{logtekst} sendt til {r['email']} (måler {r['maaler_id']:03d})")
+
+
+def tjek_alarmer():
+    t_nu = nu()
+    with db.db() as c:
+        status = c.execute("SELECT s.*, m.placering FROM status s JOIN maalere m ON m.id=s.maaler_id "
+                           "WHERE m.aktiv=1").fetchall()
+        tild = c.execute(
+            "SELECT t.*, m.placering, b.email, b.navn, b.aktiv AS b_aktiv FROM tildelinger t "
+            "JOIN maalere m ON m.id=t.maaler_id JOIN brugere b ON b.id=t.bruger_id "
+            "WHERE t.start_ts<=? AND (t.slut_ts IS NULL OR t.slut_ts>?)", (t_nu, t_nu)).fetchall()
+        # døgnforbrug kun for dem med en døgngrænse
+        midnat = dato_ts(i_dag())
+        dag_kwh = {t["id"]: forbrug.forbrug(c, t["maaler_id"], max(midnat, t["start_ts"]), t_nu + 1)
+                   for t in tild if t["dag_graense_kwh"] is not None}
+    st_maaler = {s["maaler_id"]: s for s in status}
+    _tjek_overlast(status, {t["maaler_id"]: t for t in tild}, t_nu)
+    if simulering.aktiv():
+        return   # ingen mails til medlemmer mens der er simuleret forbrug
+    eff_min = float(db.hent("effekt_alarm_minutter") or 2)
+    brugt = set()
+    for t in tild:
+        s = st_maaler.get(t["maaler_id"])
+        if not s or not t["b_aktiv"]:
+            continue
+        r = {**dict(t), "effekt_w": s["effekt_w"], "strom_a": s["strom_a"]}
+        online = s["tilgaengelig"] and s["effekt_w"] is not None
+        if t["effekt_graense_w"] is not None:
+            brugt.add(("eff", t["id"]))
+            if online:
+                _effekt(r, t_nu, eff_min)
+        if t["stop_alarm_min"] is not None:
+            brugt.add(("stop", t["id"]))
+            if online:
+                _stop(r, t_nu)
+        if t["dag_graense_kwh"] is not None:
+            _dag(r, dag_kwh[t["id"]])
+    for k in list(_tilstand):
+        if k[0] in ("eff", "stop") and k not in brugt:
+            del _tilstand[k]
+
+
+def _effekt(r, t_nu, minutter):
+    tl = _st("eff", r["id"], over_siden=None, sendt=None, advaret=False)
+    g = r["effekt_graense_w"]
+    if r["effekt_w"] <= g:
+        tl["over_siden"] = None
+        if r["effekt_w"] < g * 0.9:
+            tl["advaret"] = False       # klar til en ny alarm
+        return
+    if tl["over_siden"] is None:
+        tl["over_siden"] = t_nu
+    if (tl["advaret"] or t_nu - tl["over_siden"] < minutter * 60
+            or (tl["sendt"] and t_nu - tl["sendt"] < EFFEKT_MAIL_PAUSE)):
+        return
+    tl["advaret"], tl["sendt"] = True, t_nu
+    navn = r["baad"] or f"måler {r['maaler_id']:03d}"
+    _mail_medlem(
+        r, f"Strømalarm: {navn} bruger {rapport.dk(r['effekt_w'], 0)} W",
+        f"{_maaler_navn(r)} bruger lige nu {rapport.dk(r['effekt_w'], 0)} W"
+        + (f" ({rapport.dk(r['strom_a'], 1)} A)" if r["strom_a"] is not None else "")
+        + f", og har været over din alarmgrænse på {rapport.dk(g, 0)} W siden kl. {lokal(tl['over_siden']):%H:%M}.\n\n"
+        "Er det ikke dig, der bruger strømmen, så tjek om der sidder et andet stik i dit udtag på standeren, "
+        "og kontakt havnekontoret.\n\n"
+        "Du får ikke en ny alarm, før forbruget har været under grænsen igen (og tidligst om en time).",
+        f"Strømalarm ({r['effekt_w']:.0f} W > {g} W)")
+
+
+def _stop(r, t_nu):
+    """Alarm når forbruget er stoppet. Kræver at vi har set forbrug siden opstart, så en båd
+    der slet ikke bruger strøm (eller en genstart) ikke giver alarm."""
+    tl = _st("stop", r["id"], lav_siden=None, set_forbrug=False, advaret=False)
+    if r["effekt_w"] >= STOP_W:
+        if tl["advaret"]:
+            _mail_medlem(
+                r, f"Strømmen er tilbage: {r['baad'] or 'måler %03d' % r['maaler_id']}",
+                f"{_maaler_navn(r)} bruger igen strøm: {rapport.dk(r['effekt_w'], 0)} W "
+                f"(forbruget stoppede kl. {lokal(tl['lav_siden']):%H:%M}).",
+                "Besked om strøm tilbage")
+        tl.update(lav_siden=None, set_forbrug=True, advaret=False)
+        return
+    if not tl["set_forbrug"]:
+        return
+    if tl["lav_siden"] is None:
+        tl["lav_siden"] = t_nu
+    if tl["advaret"] or t_nu - tl["lav_siden"] < r["stop_alarm_min"] * 60:
+        return
+    tl["advaret"] = True
+    navn = r["baad"] or f"måler {r['maaler_id']:03d}"
+    _mail_medlem(
+        r, f"Strømalarm: forbruget er stoppet ({navn})",
+        f"{_maaler_navn(r)} har ikke brugt strøm siden kl. {lokal(tl['lav_siden']):%H:%M} "
+        f"(under {STOP_W} W i mere end {r['stop_alarm_min']} minutter).\n\n"
+        "Måleren har forbindelse og strøm fra standeren, så det skyldes sandsynligvis noget om bord: "
+        "en sikring eller HPFI-relæ der er slået fra, et løst stik, eller at varme/affugter er stoppet.\n\n"
+        "Du får en ny mail, når der igen bruges strøm.",
+        "Alarm om stoppet forbrug")
+
+
+def _dag(r, kwh):
+    g = r["dag_graense_kwh"]
+    if kwh <= g or not _engang(f"dagalarm:{r['id']}:{i_dag()}"):
+        return
+    _mail_medlem(
+        r, f"Elforbrug: {r['baad'] or 'måler %03d' % r['maaler_id']} har brugt {rapport.dk(kwh, 1)} kWh i dag",
+        f"{_maaler_navn(r)} har i dag (fra kl. 00) brugt {rapport.dk(kwh, 1)} kWh, "
+        f"hvilket er over din grænse på {rapport.dk(g, 1)} kWh.\n\n"
+        "Er forbruget højere end forventet, så tjek hvad der er tændt om bord – og om der sidder et "
+        "andet stik i dit udtag på standeren.\n\nDu får højst én mail om dagen om døgnforbruget.",
+        f"Døgnalarm ({kwh:.1f} kWh > {g} kWh)")
+
+
+def _tjek_overlast(status, tild_pr_maaler, t_nu):
+    """Havnekontoret: et udtag har trukket mindst overlast_a i overlast_minutter."""
+    graense = float(db.hent("overlast_a") or 15)
+    minutter = float(db.hent("overlast_minutter") or 10)
+    nye = []
+    for s in status:
+        tl = _st("over", s["maaler_id"], over_siden=None, sendt=None, advaret=False)
+        if not s["tilgaengelig"]:
+            continue
+        a = s["strom_a"] if s["strom_a"] is not None else (s["effekt_w"] or 0) / 230
+        if a < graense:
+            tl["over_siden"] = None
+            if a < graense - 1:
+                tl["advaret"] = False
+            continue
+        if tl["over_siden"] is None:
+            tl["over_siden"] = t_nu
+        if (tl["advaret"] or t_nu - tl["over_siden"] < minutter * 60
+                or (tl["sendt"] and t_nu - tl["sendt"] < OVERLAST_PAUSE)):
+            continue
+        tl["advaret"], tl["sendt"] = True, t_nu
+        t = tild_pr_maaler.get(s["maaler_id"])
+        nye.append((s, a, tl["over_siden"], f"{t['navn']}" + (f", {t['baad']}" if t["baad"] else "") if t
+                    else "ikke tildelt"))
+    if not nye:
+        return
+    numre = [f"{s['maaler_id']:03d}" for s, *_ in nye]
+    db.log("måler", f"Overbelastning (≥ {graense:g} A i {minutter:g} min): {', '.join(numre)}")
+    tekst = (f"Følgende udtag har trukket mindst {rapport.dk(graense, 0)} A i mere end {minutter:g} minutter "
+             f"(et udtag er sikret med 16 A):\n\n"
+             + "\n".join(f"   Måler {s['maaler_id']:03d} {s['placering'] or '':8} {rapport.dk(a, 1)} A "
+                         f"({rapport.dk(s['effekt_w'] or 0, 0)} W) siden {lokal(siden):%H:%M} – {hvem}"
+                         for s, a, siden, hvem in nye)
+             + "\n\nVedvarende belastning tæt på 16 A kan give varme stik og kabler eller udløse sikringen. "
+               "Tjek stik og kabel, og tal evt. med bådejeren.")
+    mailer.send(_kontor_modtagere("mail_offline"),
+                "Overbelastning på udtag " + ", ".join(numre[:10]),
+                tekst)
 
 
 def tjek_offline():
@@ -264,6 +444,7 @@ def koer():
             if t - sidste_poll >= config.POLL_SECONDS:
                 sidste_poll = t
                 collector.poll_en_gang(kilde)
+                tjek_alarmer()
             slot = int(t) // step * step
             if slot > sidste_slot:
                 sidste_slot = slot

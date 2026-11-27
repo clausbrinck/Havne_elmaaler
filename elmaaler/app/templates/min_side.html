@@ -30,7 +30,7 @@
 
 <div data-live="{{ url_for('api_live') }}">
 {% for k in kort %}
-<div class="kort maalerkort" data-fane-indhold="{{ k.t.maaler_id }}">
+<div class="kort maalerkort" id="maaler-{{ k.t.maaler_id }}" data-fane-indhold="{{ k.t.maaler_id }}">
   <div class="maaler-hoved">
     <h2>{% if k.t.baad %}{{ k.t.baad }} · {% endif %}Måler {{ '%03d' % k.t.maaler_id }}{% if k.t.placering %} · {{ k.t.placering }}{% endif %}</h2>
     {% if k.st.sidst_set %}
@@ -77,6 +77,38 @@
   <h3>Forbrug</h3>
   {{ gr.panel(url_for('api_forbrug', maaler=k.t.maaler_id, egen=1), 'maaned', 160) }}
   <p class="muted">Tællerstand: {{ k.st.energi_kwh | dk(2) }} kWh</p>
+
+  <h3>🔔 Alarmer</h3>
+  <form method="post" action="{{ url_for('min_alarmer') }}" class="alarmer">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input type="hidden" name="maaler" value="{{ k.t.maaler_id }}">
+    <p class="muted">Få en e-mail, når noget er galt. Lad feltet stå tomt for at slå en alarm fra.</p>
+    <div class="alarm-linje">
+      <label for="eff-{{ k.t.maaler_id }}"><strong>Højt strømforbrug</strong>
+        <span class="muted">Mere end grænsen i over {{ alarm_min | dk(0) }} minutter – fx hvis nogen har sat sit stik i dit udtag.
+          Sæt grænsen lidt over det, du selv plejer at bruge.</span></label>
+      <div class="indtast"><input type="number" id="eff-{{ k.t.maaler_id }}" name="effekt" min="50" max="4000" step="any"
+             inputmode="numeric" placeholder="fx 1500" value="{{ k.t.effekt_graense_w or '' }}"> W</div>
+    </div>
+    <div class="alarm-linje">
+      <label for="dag-{{ k.t.maaler_id }}"><strong>Højt døgnforbrug</strong>
+        <span class="muted">Når forbruget i dag (fra kl. 00) kommer over grænsen. Højst én mail om dagen.</span></label>
+      <div class="indtast"><input type="number" id="dag-{{ k.t.maaler_id }}" name="dag" min="1" max="90" step="any"
+             inputmode="decimal" placeholder="fx 15" value="{{ '%g' % k.t.dag_graense_kwh if k.t.dag_graense_kwh else '' }}"> kWh</div>
+    </div>
+    <div class="alarm-linje">
+      <label for="stop-{{ k.t.maaler_id }}"><strong>Forbruget stopper</strong>
+        <span class="muted">Hvis der ikke bruges strøm (fx sikring slået fra om bord, eller varme/affugter stoppet).
+          Du får også besked, når strømmen er tilbage. Brug den ikke, hvis dit forbrug normalt holder pauser.</span></label>
+      <div class="indtast"><select id="stop-{{ k.t.maaler_id }}" name="stop">
+        <option value="">Fra</option>
+        {% for m in stop_valg %}<option value="{{ m }}" {{ 'selected' if k.t.stop_alarm_min == m }}>Efter {{ m if m < 60 else m // 60 }} {{ 'min' if m < 60 else 'time' if m == 60 else 'timer' }}</option>{% endfor %}
+      </select></div>
+    </div>
+    <button>Gem alarmer</button>
+    <p class="muted">Til sammenligning: affugter ca. 200–400 W, elvarme 500–2000 W, vandkoger ca. 2000 W.
+      Et udtag kan højst give ca. 3700 W (16 A). 1000 W i et døgn = 24 kWh.</p>
+  </form>
 </div>
 {% endfor %}
 </div>

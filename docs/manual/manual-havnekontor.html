@@ -155,11 +155,13 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
 <div class="billede bred">
   <img src="billeder/kontor-import.png">
   <ol class="tal">
-    <li><b>Format:</b> første linje er kolonnenavne. Kun <code>maaler</code> er påkrævet. Gem fra Excel som <i>CSV UTF-8</i>.</li>
+    <li><b>Format:</b> første linje er kolonnenavne. Hver linje skal have <code>maaler</code> eller <code>email</code>.
+      En linje med e-mail men uden målernummer opretter kun medlemmet – måleren kan tildeles senere. Gem fra Excel som <i>CSV UTF-8</i>.</li>
     <li>Vælg filen.</li>
     <li>Sæt flueben, hvis nye medlemmer skal have en invitation på e-mail.</li>
   </ol>
 </div>
+<div class="tip"><b>Trygt at importere igen</b>Findes e-mailen allerede, opdateres kun telefonnummeret (navnet ændres ikke). Har medlemmet allerede måleren, sker der intet. To linjer med samme e-mail bliver én bruger – fx med to målere.</div>
 
 <h2>Målere der ikke er i brug</h2>
 <div class="billede bred">
@@ -195,9 +197,15 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
 <h2>Mails til havnekontoret</h2>
 <div class="billede mellem">
   <img src="billeder/kontor-konto.png">
-  <div><p>Under <b>Konto Administration</b> vælger hver havnekontor-bruger sine egne mails: målere uden forbindelse
-    (og fejl på Home Assistant/backup), samlet forbrug pr. døgn og uge samt månedsopgørelsen med CSV-fil.</p></div>
+  <div><p>Under <b>Konto Administration</b> vælger hver havnekontor-bruger sine egne mails: målere uden forbindelse,
+    overbelastede udtag (og fejl på Home Assistant/backup), samlet forbrug pr. døgn og uge samt månedsopgørelsen med CSV-fil.</p>
+    <p><b>Overbelastning:</b> trækker et udtag mindst 15 A i mere end 10 minutter, kommer der en mail med måler, placering,
+      ampere og hvem måleren er tildelt. Udtaget er sikret med 16 A, så vedvarende belastning tæt på kan give varme stik og
+      kabler. Tjek stik og kabel, og tal evt. med bådejeren. Højst én mail pr. udtag hver 6. time.</p></div>
 </div>
+<div class="info"><b>Medlemmernes alarmer</b>Medlemmerne kan selv sætte alarmer på Min side: højt strømforbrug, højt døgnforbrug
+  og stoppet forbrug. Mailen om højt strømforbrug beder medlemmet kontakte havnekontoret, hvis de ikke selv bruger strømmen –
+  så har nogen måske sat sit stik i det forkerte udtag. Find udtaget under <b>Overblik</b> og se, hvad der sidder i.</div>
 
 <h2>Årshjul</h2>
 <table>

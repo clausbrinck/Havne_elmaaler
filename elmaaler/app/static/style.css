@@ -48,6 +48,15 @@ tr:hover td { background: #f6f9fb; }
 .flash.adv { background: #fdf3dc; color: #7a5410; border: 1px solid #f0dca8; }
 .flash.fejl { background: #fbe7e5; color: #8e2418; border: 1px solid #f1c3bd; word-break: break-all; }
 form.linje { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.alarmer .alarm-linje { display: flex; gap: 12px; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--linje, #e3e8ee); }
+.alarmer .alarm-linje label { flex: 1; margin: 0; }
+.alarmer .alarm-linje label .muted { display: block; font-weight: normal; }
+.alarmer .indtast { white-space: nowrap; }
+.alarmer .indtast input { width: 7em; }
+.alarmer .indtast select { width: 9em; }
+.alarmer > button { margin-top: 12px; }
+@media (max-width: 600px) { .alarmer .alarm-linje { flex-direction: column; align-items: stretch; } }
 label { display: block; font-size: 13px; color: var(--graa); margin-bottom: 3px; }
 input[type=text], input[type=email], input[type=password], input[type=date], input[type=number], input[type=search], select, textarea {
   font: inherit; padding: 8px 10px; border: 1px solid #c9d2db; border-radius: 7px; background: #fff; width: 100%; min-width: 0; }

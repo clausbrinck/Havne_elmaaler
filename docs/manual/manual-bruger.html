@@ -18,7 +18,7 @@
     <li>1 · Kom godt i gang
       <ol><li>Hvad er elmålersystemet?</li><li>Log ind</li><li>Glemt adgangskode</li><li>Læg siden på telefonens hjemmeskærm</li><li>Hjælp og manualer</li></ol></li>
     <li>2 · Min side
-      <ol><li>Enkel visning</li><li>Mørk visning</li><li>Overblik over dine både</li><li>Forbrug, ampere, volt og forbrugsgruppe</li><li>Grafen: døgn, uge, måned og vinter</li><li>Når måleren mister forbindelsen</li><li>E-mails og forbrugsrapport</li><li>Prisliste og tidligere måneder</li><li>Konto Administration</li><li>Sådan afregnes vinterstrøm</li></ol></li>
+      <ol><li>Enkel visning</li><li>Mørk visning</li><li>Overblik over dine både</li><li>Forbrug, ampere, volt og forbrugsgruppe</li><li>Grafen: døgn, uge, måned og vinter</li><li>Når måleren mister forbindelsen</li><li>Alarmer</li><li>E-mails og forbrugsrapport</li><li>Prisliste og tidligere måneder</li><li>Konto Administration</li><li>Sådan afregnes vinterstrøm</li></ol></li>
     <li>3 · Spørgsmål og svar
       <ol></ol></li>
   </ol>
@@ -90,7 +90,7 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
       <li>En <b>rød advarsel</b>, hvis måleren har mistet forbindelsen – tjek stik og strøm på standeren.</li>
       <li><b>I dag</b>, <b>måneden</b> og <b>prisen indtil nu</b>. Med store tal øverst står det, båden <b>bruger lige nu</b> (watt), med ampere, en forklaring og standerens spænding (V) og frekvens (Hz).</li>
       <li><b>Bjælken</b> viser, hvor tæt du er på næste, dyrere forbrugsgruppe – og hvad den koster.</li>
-      <li><b>Avanceret visning ›</b> skifter til den fulde side med grafer, e-mails og forbrugsrapport. Knappen <b>‹ Enkel visning</b> skifter tilbage.</li>
+      <li><b>Avanceret visning ›</b> skifter til den fulde side med grafer, alarmer, e-mails og forbrugsrapport. Knappen <b>‹ Enkel visning</b> skifter tilbage.</li>
     </ol>
     <p>Systemet husker dit valg – også når du logger ind på en anden telefon eller computer.</p>
   </div>
@@ -180,7 +180,27 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
     <p>Det sker oftest, fordi landstrømsstikket er taget ud, eller fordi strømmen til standeren er afbrudt. Har du varme eller
       affugter tændt om bord, så tjek det hurtigst muligt.</p>
     <div class="tip"><b>Intet forbrug går tabt</b>Måleren tæller selv videre, så længe den har strøm. Når forbindelsen er tilbage, kommer forbruget med.</div>
-    <p>Du kan få en e-mail, når forbindelsen har været væk i mere end en time (se næste afsnit).</p>
+    <p>Du kan få en e-mail, når forbindelsen har været væk i mere end en time (se <i>E-mails og forbrugsrapport</i>).</p>
+  </div>
+</div>
+
+<h2>Alarmer</h2>
+<div class="billede mobil">
+  <img src="billeder/minside-alarmer.png">
+  <div>
+    <p>Under hver båd kan du selv sætte alarmer, så du får en e-mail, når noget er galt. Lad et felt stå tomt for at slå alarmen fra.</p>
+    <ol class="tal">
+      <li><b>Højt strømforbrug</b> – måleren har brugt mere end din grænse (watt) i over 2 minutter. Det kan fx betyde,
+        at nogen har sat sit stik i dit udtag. Sæt grænsen lidt over det, du selv plejer at bruge – se <i>Bruger lige nu</i>.</li>
+      <li><b>Højt døgnforbrug</b> – forbruget i dag (fra kl. 00) er kommet over din grænse i kWh. Højst én mail om dagen.</li>
+      <li><b>Forbruget stopper</b> – måleren har forbindelse, men der er ikke brugt strøm i den tid, du vælger. Det kan være
+        en sikring eller et HPFI-relæ om bord, der er slået fra, eller varme/affugter, der er stoppet. Du får også en mail, når strømmen er tilbage.</li>
+      <li><b>Gem alarmer</b>.</li>
+    </ol>
+    <div class="tip"><b>Hvad skal grænsen være?</b>Affugter ca. 200–400 W, elvarme 500–2000 W, vandkoger ca. 2000 W. Et udtag kan højst give ca. 3700 W.
+      1000 W hele døgnet giver 24 kWh.</div>
+    <p>Alarmen <i>Forbruget stopper</i> passer ikke, hvis dit forbrug normalt holder pauser – fx en affugter, der selv slukker, når luften er tør.
+      I den enkle visning står der under båden, hvilke alarmer der er slået til.</p>
   </div>
 </div>
 
@@ -271,6 +291,8 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
   <div class="sammen"><h3>Hvad betyder V og Hz?</h3>
     <p>V (volt) er spændingen på standeren – normalt 220–240 V. Hz er netfrekvensen – altid tæt på 50 Hz. Er spændingen meget lav (under ca. 207 V),
       så sig det til havnekontoret; det kan være en dårlig forbindelse i standeren.</p></div>
+  <div class="sammen"><h3>Jeg har fået en strømalarm, men bruger ikke strøm.</h3>
+    <p>Kig på standeren, om der sidder et andet stik i dit udtag, og kontakt havnekontoret. Du får ikke en ny alarm, før forbruget har været under grænsen igen – og højst én i timen.</p></div>
   <div class="sammen"><h3>Kan andre se mit forbrug?</h3>
     <p>Andre medlemmer kan ikke. Havnekontoret kan se alle målere – det er nødvendigt for afregningen.</p></div>
   <div class="sammen"><h3>Hvem kontakter jeg?</h3>

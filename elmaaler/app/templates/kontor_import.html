@@ -5,7 +5,8 @@
 <h1>Importér målere og brugere fra CSV</h1>
 <div class="kort">
   <p>Første linje skal være kolonnenavne. Semikolon eller komma som skilletegn (Excel "CSV UTF-8" virker).
-    Kun <code>maaler</code> er påkrævet – resten er valgfrit:</p>
+    Hver linje skal have <code>maaler</code> eller <code>email</code> – resten er valgfrit.
+    En linje med email men uden målernummer opretter kun brugeren (måler kan tildeles senere):</p>
   <pre><code>maaler;placering;email;navn;baad;telefon;start_dato
 1;S01-U1;hans@eksempel.dk;Hans Hansen;Havørnen;20202020;2026-11-01
 2;S01-U2;;;;;

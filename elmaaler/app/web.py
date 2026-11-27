@@ -292,7 +292,8 @@ def min_side():
                            historik=forbrug.bruger_historik(g.bruger["id"]),
                            kategorier=forbrug.kategorier(), afregnes=forbrug.afregnes(maaned),
                            i_dag=i_dag().isoformat(), maaned_start=i_dag().replace(day=1).isoformat(),
-                           smtp=mailer.konfigureret(), enkel=g.bruger["visning"] != "avanceret")
+                           smtp=mailer.konfigureret(), enkel=g.bruger["visning"] != "avanceret",
+                           alarm_min=float(db.hent("effekt_alarm_minutter") or 2), stop_valg=STOP_VALG)
 
 
 @app.route("/min-side/visning", methods=["POST"])
@@ -316,6 +317,56 @@ def mine_emails():
         return jsonify(ok=True)
     flash("Dine e-mail-valg er gemt.", "ok")
     return redirect(url_for("min_side"))
+
+
+STOP_VALG = (15, 30, 60, 120, 240)       # minutter for alarmen "forbruget er stoppet"
+
+
+def _tal(navn, mindst, hoejst, enhed):
+    """Tal fra formularen (dansk komma og tusindtalspunktum tilladt). Tomt felt = None (alarm fra)."""
+    tekst = (request.form.get(navn) or "").strip().replace(" ", "")
+    if not tekst:
+        return None
+    if "," in tekst:
+        tekst = tekst.replace(".", "").replace(",", ".")
+    elif tekst.count(".") == 1 and len(tekst.split(".")[1]) == 3:
+        tekst = tekst.replace(".", "")              # 1.500 = 1500
+    try:
+        v = float(tekst)
+    except ValueError:
+        v = None
+    if v is None or not mindst <= v <= hoejst:
+        raise ValueError(f"skal være mellem {mindst} og {hoejst} {enhed}")
+    return v
+
+
+@app.route("/min-side/alarmer", methods=["POST"])
+@login_kraevet
+def min_alarmer():
+    """Medlemmets egne alarmer pr. måler: effekt (W), døgnforbrug (kWh) og stoppet forbrug. Tomt = fra."""
+    try:
+        nr = int(request.form.get("maaler", 0))
+    except ValueError:
+        abort(400)
+    tilbage = redirect(url_for("min_side") + f"#maaler-{nr}")
+    try:
+        effekt = _tal("effekt", 50, 4000, "W")         # et 16 A-udtag giver højst ca. 3700 W
+        dag = _tal("dag", 1, 90, "kWh")                # 24 t × 3,7 kW ≈ 89 kWh
+    except ValueError as e:
+        flash(f"Grænsen {e}.", "fejl")
+        return tilbage
+    stop = request.form.get("stop", "")
+    stop = int(stop) if stop.isdigit() and int(stop) in STOP_VALG else None
+    with db.db() as c:
+        t = forbrug.aktive_tildelinger(c, bruger_id=g.bruger["id"], maaler_id=nr)
+        if not t:
+            abort(403)
+        c.execute("UPDATE tildelinger SET effekt_graense_w=?, dag_graense_kwh=?, stop_alarm_min=? WHERE id=?",
+                  (int(effekt) if effekt else None, round(dag, 1) if dag else None, stop, t[0]["id"]))
+    slaaet_til = [x for x, v in (("strøm", effekt), ("døgnforbrug", dag), ("stoppet forbrug", stop)) if v]
+    flash(f"Alarmer for måler {nr:03d} er gemt" + (f" ({', '.join(slaaet_til)})." if slaaet_til
+                                                   else " – alle er slået fra."), "ok")
+    return tilbage
 
 
 def _rapport_periode(valg, fra_txt, til_txt):
@@ -1015,6 +1066,9 @@ def system_indstillinger():
                 db.gem("mail_tidspunkt", f"{int(request.form['mail_time']):02d}:{int(request.form['mail_min']):02d}")
                 db.gem("offline_minutter", max(10, int(request.form["offline_minutter"])))
                 db.gem("advarsel_procent", min(99, max(50, int(request.form["advarsel_procent"]))))
+                db.gem("effekt_alarm_minutter", min(60, max(1, int(request.form.get("effekt_alarm_minutter") or 2))))
+                db.gem("overlast_a", min(16, max(5, int(request.form.get("overlast_a") or 15))))
+                db.gem("overlast_minutter", min(240, max(1, int(request.form.get("overlast_minutter") or 10))))
                 db.log("indstilling", f"Mail-opsætning ændret af {g.bruger['email']}")
                 flash("Email-opsætning gemt.", "ok")
             elif h == "kategorier":
@@ -1083,7 +1137,8 @@ def system_debug():
 @app.route("/kontor/import", methods=["GET", "POST"])
 @kontor_kraevet
 def kontor_import():
-    """CSV med kolonnerne: maaler;placering;email;navn;baad;telefon;start_dato (alt undtagen maaler valgfrit)."""
+    """CSV med kolonnerne: maaler;placering;email;navn;baad;telefon;start_dato.
+    Kræver maaler eller email; email uden maaler opretter kun brugeren."""
     resultat = None
     if request.method == "POST":
         f = request.files.get("fil")
@@ -1099,22 +1154,25 @@ def kontor_import():
             r = {(k or "").strip().lower(): (v or "").strip() for k, v in r.items()}
             try:
                 nr = int(r.get("maaler") or r.get("måler") or 0)
-                if not 1 <= nr <= config.METER_COUNT:
+                if not nr and not r.get("email"):
+                    raise ValueError("hverken målernummer eller email")
+                if nr and not 1 <= nr <= config.METER_COUNT:
                     raise ValueError(f"målernummer '{nr}' findes ikke")
                 with db.db() as c:
-                    if r.get("placering") and er_admin(g.bruger):   # måleropsætning er systemadministration
+                    if nr and r.get("placering") and er_admin(g.bruger):   # måleropsætning er systemadministration
                         c.execute("UPDATE maalere SET placering=? WHERE id=?", (r["placering"].upper(), nr))
                     if r.get("email"):
                         b, ny = _find_eller_opret_bruger(c, r["email"], r.get("navn", ""))
                         baad = r.get("baad") or r.get("båd") or ""
                         c.execute("UPDATE brugere SET telefon=COALESCE(NULLIF(?,''), telefon) WHERE id=?",
                                   (r.get("telefon", ""), b["id"]))
-                        aktiv = forbrug.aktive_tildelinger(c, maaler_id=nr)
-                        if not (aktiv and aktiv[0]["bruger_id"] == b["id"]):
-                            _tildel(c, nr, b["id"], parse_dato(r.get("start_dato") or i_dag().isoformat()), baad)
-                        elif baad:
-                            c.execute("UPDATE tildelinger SET baad=? WHERE id=?", (baad, aktiv[0]["id"]))
                         resultat["nye"] += ny
+                        if nr:   # uden målernummer oprettes kun brugeren – måler tildeles senere
+                            aktiv = forbrug.aktive_tildelinger(c, maaler_id=nr)
+                            if not (aktiv and aktiv[0]["bruger_id"] == b["id"]):
+                                _tildel(c, nr, b["id"], parse_dato(r.get("start_dato") or i_dag().isoformat()), baad)
+                            elif baad:
+                                c.execute("UPDATE tildelinger SET baad=? WHERE id=?", (baad, aktiv[0]["id"]))
                 if r.get("email") and inviter and ny:
                     with db.db() as c:
                         b = c.execute("SELECT * FROM brugere WHERE id=?", (b["id"],)).fetchone()

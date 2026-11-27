@@ -13,7 +13,7 @@
     <h3>Ekstra modtagere af havnekontor-mails (fx kasserer)</h3>
     <div class="felt"><input type="text" name="ekstra_kontor_emails" value="{{ ind.ekstra_kontor_emails }}" placeholder="kasserer@…, formand@…"></div>
     <div class="felter">
-      <label class="check"><input type="checkbox" name="ekstra_mail_offline" {{ 'checked' if ind.ekstra_mail_offline }}> <span>Offline</span></label>
+      <label class="check"><input type="checkbox" name="ekstra_mail_offline" {{ 'checked' if ind.ekstra_mail_offline }}> <span>Offline og overbelastning</span></label>
       <label class="check"><input type="checkbox" name="ekstra_mail_dag" {{ 'checked' if ind.ekstra_mail_dag }}> <span>Døgn</span></label>
       <label class="check"><input type="checkbox" name="ekstra_mail_uge" {{ 'checked' if ind.ekstra_mail_uge }}> <span>Uge</span></label>
       <label class="check"><input type="checkbox" name="ekstra_mail_maaned" {{ 'checked' if ind.ekstra_mail_maaned }}> <span>Måned</span></label>
@@ -31,6 +31,9 @@
         <div style="display:flex;gap:4px"><input type="number" name="mail_time" min="0" max="23" value="{{ mail_time }}"><input type="number" name="mail_min" min="0" max="59" value="{{ mail_min }}"></div></div>
       <div class="felt"><label>Offline-varsel efter (min)</label><input type="number" name="offline_minutter" min="10" value="{{ ind.offline_minutter }}"></div>
       <div class="felt"><label>Advar medlem ved % af gruppegrænse</label><input type="number" name="advarsel_procent" min="50" max="99" value="{{ ind.advarsel_procent }}"></div>
+      <div class="felt"><label>Strømalarm efter (min over grænsen)</label><input type="number" name="effekt_alarm_minutter" min="1" max="60" value="{{ ind.effekt_alarm_minutter or 2 }}"></div>
+      <div class="felt"><label>Overbelastning: advar kontoret ved (A)</label><input type="number" name="overlast_a" min="5" max="16" value="{{ ind.overlast_a or 15 }}"></div>
+      <div class="felt"><label>Overbelastning i mindst (min)</label><input type="number" name="overlast_minutter" min="1" max="240" value="{{ ind.overlast_minutter or 10 }}"></div>
     </div>
     <button>Gem</button>
   </form>

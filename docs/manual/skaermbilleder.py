@@ -101,6 +101,12 @@ BILLEDER = [
      [[".baad-faner", ""], [".maalerkort .besked", ""]],
      [[".baad-faner button", "Marlin", 1], [".maalerkort .maaler-hoved .badge", "", 2, "h"],
       [".maalerkort .besked.alarm", "", 3]]),
+    ("minside-alarmer", "hans", "/min-side", MOBIL, HAVOERN +
+     "var f=__find('.maalerkort .alarmer input[name=effekt]'); f.value='1500';"
+     "__find('.maalerkort .alarmer select[name=stop]').value='60';",
+     [[".maalerkort .alarmer", ""]],
+     [[".maalerkort .alarm-linje", "Højt strømforbrug", 1], [".maalerkort .alarm-linje", "Højt døgnforbrug", 2],
+      [".maalerkort .alarm-linje", "Forbruget stopper", 3], [".maalerkort .alarmer button", "Gem alarmer", 4]]),
     ("minside-email", "hans", "/min-side", MOBIL,
      "__find('.baad-faner button','Havørnen').click(); var c=__find('input[name=mail_dag]'); c.click();"
      "await new Promise(r=>setTimeout(r,800));",

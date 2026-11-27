@@ -36,6 +36,11 @@
   {% elif not afregnes %}
     <div class="muted">{{ maaned | maaned_navn | capitalize }} ligger uden for vinterafregningen.</div>
   {% endif %}
+  {% set al = [] %}
+  {% if k.t.effekt_graense_w %}{% set _ = al.append('over %s W' % (k.t.effekt_graense_w | dk(0))) %}{% endif %}
+  {% if k.t.dag_graense_kwh %}{% set _ = al.append('over %s kWh/døgn' % (k.t.dag_graense_kwh | dk(1))) %}{% endif %}
+  {% if k.t.stop_alarm_min %}{% set _ = al.append('hvis forbruget stopper') %}{% endif %}
+  {% if al %}<div class="muted">🔔 Alarm {{ al | join(' · ') }}</div>{% endif %}
 </div>
 {% endfor %}
 </div>
@@ -44,7 +49,7 @@
 <form method="post" action="{{ url_for('min_visning') }}" class="kort enkel-mere">
   <input type="hidden" name="csrf" value="{{ csrf() }}">
   <div><strong>Vil du se mere?</strong>
-    <span class="muted">Grafer for døgn, uge, måned og vinter · e-mails · forbrugsrapport · tidligere måneder · prisliste</span></div>
+    <span class="muted">Grafer for døgn, uge, måned og vinter · e-mails · alarmer · forbrugsrapport · tidligere måneder · prisliste</span></div>
   <button name="visning" value="avanceret">Avanceret visning ›</button>
 </form>
 {% endif %}
