@@ -1,5 +1,6 @@
 """Webinterface: bruger-login (Min side) og havnekontor-login."""
 import csv
+import hashlib
 import io
 import os
 import re
@@ -48,6 +49,25 @@ def er_admin(b):
 # ---------------------------------------------------------------- filtre og fælles
 
 app.jinja_env.filters.update(dk=rapport.dk, tid=fmt_tid, dato=fmt_dato, siden=siden, maaned_navn=maaned_navn)
+
+_static_version = {}
+
+
+@app.url_defaults
+def _static_v(endpoint, values):
+    """Tilføj ?v=<hash af filen> til style.css/app.js m.fl., så browseren henter den nye fil efter en opdatering
+    i stedet for at bruge en gammel kopi fra sin cache."""
+    if endpoint != "static" or "filename" not in values:
+        return
+    navn = values["filename"]
+    if navn not in _static_version:
+        try:
+            with open(os.path.join(app.static_folder, navn), "rb") as f:
+                _static_version[navn] = hashlib.md5(f.read()).hexdigest()[:10]
+        except OSError:
+            _static_version[navn] = None
+    if _static_version[navn]:
+        values["v"] = _static_version[navn]
 
 
 @app.context_processor
