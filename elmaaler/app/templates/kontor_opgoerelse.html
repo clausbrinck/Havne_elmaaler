@@ -34,6 +34,20 @@
   </div>
 </div>
 
+<div class="kort">
+  <div class="maaler-hoved">
+    <div><h2 style="margin:0 0 4px">Månedsbackup – {{ maaned | maaned_navn }}</h2>
+      <span class="muted">Tællerstand ved start og slut, bruger, båd og kWh for hver måler – kan importeres for at genskabe
+        brugere og tildelinger. Sendes automatisk den 1. i måneden til alle administratorer og havnekontoret.</span></div>
+    <div class="linje" style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="knap sek" href="{{ url_for('kontor_maanedsbackup_csv', maaned=maaned) }}">Hent månedsbackup (CSV)</a>
+      <form method="post" data-bekraeft="Send månedsbackuppen for {{ maaned | maaned_navn }} til alle administratorer og havnekontoret?">
+        <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="maaned" value="{{ maaned }}">
+        <button class="sek" name="handling" value="send_maanedsbackup">Send på mail nu</button></form>
+    </div>
+  </div>
+</div>
+
 {% if afregnes %}
 <div class="kort">
   <h2>Fordeling på forbrugsgrupper</h2>

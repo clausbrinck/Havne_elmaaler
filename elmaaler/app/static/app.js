@@ -56,26 +56,84 @@
     }
     setInterval(opdater, 15000);
   }
-  document.querySelectorAll("input[data-filter]").forEach(function (inp) {
-    var tabel = document.getElementById(inp.getAttribute("data-filter"));
-    inp.addEventListener("input", function () {
-      var q = inp.value.toLowerCase().trim();
-      tabel.querySelectorAll("tbody tr").forEach(function (tr) {
-        tr.style.display = !q || tr.textContent.toLowerCase().indexOf(q) >= 0 ? "" : "none";
-      });
+  // Søgefelt (input[data-filter]) og valgliste (select[data-vis-filter] mod tr[data-tags]) virker sammen.
+  function filtrer(id) {
+    var tabel = document.getElementById(id);
+    var q = Array.prototype.map.call(document.querySelectorAll("input[data-filter='" + id + "']"),
+      function (i) { return i.value.toLowerCase().trim(); }).join(" ").trim();
+    var v = Array.prototype.map.call(document.querySelectorAll("select[data-vis-filter='" + id + "']"),
+      function (s) { return s.value; }).filter(Boolean);
+    tabel.querySelectorAll("tbody tr").forEach(function (tr) {
+      var tags = " " + (tr.getAttribute("data-tags") || "") + " ";
+      var ok = (!q || tr.textContent.toLowerCase().indexOf(q) >= 0) &&
+        v.every(function (t) { return tags.indexOf(" " + t + " ") >= 0; });
+      tr.style.display = ok ? "" : "none";
     });
+  }
+  document.querySelectorAll("input[data-filter]").forEach(function (inp) {
+    inp.addEventListener("input", function () { filtrer(inp.getAttribute("data-filter")); });
   });
   document.querySelectorAll("select[data-vis-filter]").forEach(function (sel) {
-    var tabel = document.getElementById(sel.getAttribute("data-vis-filter"));
-    sel.addEventListener("change", function () {
-      var v = sel.value;
-      tabel.querySelectorAll("tbody tr").forEach(function (tr) {
-        tr.style.display = !v || (tr.getAttribute("data-tags") || "").indexOf(v) >= 0 ? "" : "none";
+    sel.addEventListener("change", function () { filtrer(sel.getAttribute("data-vis-filter")); });
+  });
+  // Afkrydsning i tabeller: form[data-valg="feltnavn"] med knapper data-vaelg="synlige|ingen",
+  // tæller [data-valgt-antal] og knapper [data-kraever-valg], der kun er aktive, når noget er valgt.
+  document.querySelectorAll("form[data-valg]").forEach(function (f) {
+    var navn = f.getAttribute("data-valg");
+    function bokse() { return f.querySelectorAll("input[type=checkbox][name='" + navn + "']:not(:disabled)"); }
+    function synlig(el) { var tr = el.closest("tr"); return !tr || tr.style.display !== "none"; }
+    function opdater() {
+      var n = 0;
+      bokse().forEach(function (c) { if (c.checked) n++; });
+      f.querySelectorAll("[data-valgt-antal]").forEach(function (el) { el.textContent = n; });
+      f.querySelectorAll("[data-kraever-valg]").forEach(function (el) { el.disabled = !n; });
+      f.querySelectorAll("input[type=checkbox][data-vaelg]").forEach(function (alle) {
+        var vis = Array.prototype.filter.call(bokse(), synlig);
+        alle.checked = vis.length > 0 && vis.every(function (c) { return c.checked; });
+      });
+    }
+    f.addEventListener("change", opdater);
+    f.querySelectorAll("[data-vaelg]").forEach(function (k) {
+      k.addEventListener(k.type === "checkbox" ? "change" : "click", function () {
+        var til = k.type === "checkbox" ? k.checked : k.getAttribute("data-vaelg") === "synlige";
+        bokse().forEach(function (c) { if (!til || synlig(c)) c.checked = til; });
+        opdater();
       });
     });
+    f.querySelectorAll("input[data-filter], select[data-vis-filter]").forEach(function (el) {
+      el.addEventListener("input", opdater); el.addEventListener("change", opdater);
+    });
+    f.querySelectorAll("[data-aabn]").forEach(function (k) {
+      k.addEventListener("click", function () {
+        var boks = document.getElementById(k.getAttribute("data-aabn"));
+        boks.hidden = false;
+        var foerste = boks.querySelector("input, textarea");
+        if (foerste) foerste.focus();
+      });
+    });
+    f.querySelectorAll("[data-luk]").forEach(function (k) {
+      k.addEventListener("click", function () { document.getElementById(k.getAttribute("data-luk")).hidden = true; });
+    });
+    f.addEventListener("submit", function (e) {
+      // Felter med data-paakraevet skal udfyldes, når knappen ligger i samme boks (fx beskedfeltet).
+      var boks = e.submitter && e.submitter.closest("[data-felter]");
+      var tomt = boks && Array.prototype.filter.call(boks.querySelectorAll("[data-paakraevet]"),
+        function (el) { return !el.value.trim(); })[0];
+      if (tomt) { e.preventDefault(); e.stopImmediatePropagation(); tomt.focus(); alert("Udfyld emne og tekst."); return; }
+      // kun synlige valg sendes, så et filter aldrig sender til skjulte
+      var n = 0;
+      bokse().forEach(function (c) { if (c.checked && !synlig(c)) c.checked = false; if (c.checked) n++; });
+      f.setAttribute("data-antal", n);
+      opdater();
+    }, true);
+    opdater();
   });
-  document.querySelectorAll("form[data-bekraeft]").forEach(function (f) {
-    f.addEventListener("submit", function (e) { if (!confirm(f.getAttribute("data-bekraeft"))) e.preventDefault(); });
+  document.querySelectorAll("form").forEach(function (f) {
+    f.addEventListener("submit", function (e) {
+      var t = (e.submitter && e.submitter.getAttribute("data-bekraeft")) || f.getAttribute("data-bekraeft");
+      if (t && f.hasAttribute("data-antal")) t += " (" + f.getAttribute("data-antal") + ")";
+      if (t && !confirm(t)) e.preventDefault();
+    });
   });
 })();
 

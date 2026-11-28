@@ -11,7 +11,7 @@ from functools import wraps
 from flask import (Flask, Response, abort, flash, g, jsonify, redirect, render_template, request,
                    send_from_directory, session, url_for)
 
-from . import (backup, bestyrelse, collector, config, db, forbrug, jobs, mailer, perioder, rapport, sikkerhed,
+from . import (backup, bestyrelse, collector, config, db, forbrug, jobs, maanedsbackup, mailer, perioder, rapport, sikkerhed,
                simulering, vedligehold)
 from .tid import (nu, i_dag, maaned_str, maaned_grænser, maaned_navn, naeste_maaned, forrige_maaned,
                   parse_dato, dato_ts, fmt_tid, fmt_dato, siden, lokal)
@@ -151,7 +151,11 @@ def _send_link(b, formaal):
                  f"Vælg en ny her (linket virker i 24 timer):\n{link}\n\n"
                  f"Har du ikke bedt om det, kan du se bort fra denne mail.\n")
         emne = "Nulstil adgangskode – elmålere"
-    return mailer.send(b["email"], emne, tekst, signatur=False), link
+    sendt = mailer.send(b["email"], emne, tekst, signatur=False)
+    if sendt and formaal == "invitation":
+        with db.db() as c:
+            c.execute("UPDATE brugere SET inviteret=? WHERE id=?", (nu(), b["id"]))
+    return sendt, link
 
 
 # ---------------------------------------------------------------- login
@@ -706,6 +710,68 @@ def kontor_brugere():
     return render_template("kontor_brugere.html", brugere=brugere, i_dag=i_dag().isoformat())
 
 
+@app.route("/kontor/brugere/inviter", methods=["POST"])
+@kontor_kraevet
+def kontor_inviter_valgte():
+    """Send invitation (link til at vælge adgangskode) til de valgte brugere på Brugere-siden."""
+    ids = {int(x) for x in request.form.getlist("bid") if x.isdigit()}
+    if not ids:
+        flash("Vælg mindst én bruger.", "fejl")
+        return redirect(url_for("kontor_brugere"))
+    if not mailer.konfigureret():
+        flash("Der er ikke sat en mailserver op – invitationer kan ikke sendes.", "fejl")
+        return redirect(url_for("kontor_brugere"))
+    with db.db() as c:
+        brugere = c.execute(f"SELECT * FROM brugere WHERE id IN ({','.join('?' * len(ids))})", tuple(ids)).fetchall()
+    sendt, fejl, sprunget = [], [], []
+    for b in brugere:
+        if not b["aktiv"] or (er_admin(b) and not er_admin(g.bruger)):
+            sprunget.append(b["email"])
+            continue
+        ok, _ = _send_link(b, "invitation")
+        (sendt if ok else fejl).append(b["email"])
+    db.log("bruger", f"Invitation sendt til {len(sendt)} brugere (af {g.bruger['email']})"
+           + (f"; fejl: {', '.join(fejl)}" if fejl else ""))
+    if sendt:
+        flash(f"Invitation sendt til {len(sendt)} bruger{'e' if len(sendt) != 1 else ''}.", "ok")
+    if fejl:
+        flash(f"Kunne ikke sende til: {', '.join(fejl)}. Se System → Log.", "fejl")
+    if sprunget:
+        flash(f"Sprunget over (inaktiv eller systemadministrator): {', '.join(sprunget)}.", "fejl")
+    return redirect(url_for("kontor_brugere"))
+
+
+@app.route("/kontor/brugere/besked", methods=["POST"])
+@kontor_kraevet
+def kontor_besked_valgte():
+    """Send en selvskrevet besked (med klubbens signatur) til de valgte brugere – én mail pr. modtager."""
+    ids = {int(x) for x in request.form.getlist("bid") if x.isdigit()}
+    emne = " ".join(request.form.get("emne", "").split())[:150]
+    tekst = request.form.get("tekst", "").replace("\r\n", "\n").strip()
+    if not ids or not emne or not tekst:
+        flash("Vælg mindst én bruger, og skriv både emne og tekst.", "fejl")
+        return redirect(url_for("kontor_brugere"))
+    if not mailer.konfigureret():
+        flash("Der er ikke sat en mailserver op – beskeden kan ikke sendes.", "fejl")
+        return redirect(url_for("kontor_brugere"))
+    with db.db() as c:
+        brugere = c.execute(f"SELECT * FROM brugere WHERE aktiv=1 AND id IN ({','.join('?' * len(ids))})",
+                            tuple(ids)).fetchall()
+    sendt, fejl = [], []
+    for b in brugere:
+        hilsen = f"Hej {b['navn'] or b['email']},\n\n" if request.form.get("hej") else ""
+        (sendt if mailer.send(b["email"], emne, hilsen + tekst) else fejl).append(b["email"])
+    db.log("besked", f"Besked »{emne}« sendt til {len(sendt)} brugere af {g.bruger['email']}"
+           + (f"; fejl: {', '.join(fejl)}" if fejl else ""))
+    if sendt:
+        flash(f"Beskeden »{emne}« er sendt til {len(sendt)} bruger{'e' if len(sendt) != 1 else ''}.", "ok")
+    if fejl:
+        flash(f"Kunne ikke sende til: {', '.join(fejl)}. Se System → Log.", "fejl")
+    if len(brugere) < len(ids):
+        flash(f"{len(ids) - len(brugere)} inaktiv(e) bruger(e) sprunget over.", "fejl")
+    return redirect(url_for("kontor_brugere"))
+
+
 @app.route("/kontor/bruger/<int:bid>", methods=["GET", "POST"])
 @kontor_kraevet
 def kontor_bruger(bid):
@@ -844,6 +910,13 @@ def kontor_opgoerelse():
         else:
             flash("Rapporten kunne ikke sendes – se System › Log.", "fejl")
         return redirect(url_for("kontor_opgoerelse", maaned=maaned))
+    if request.method == "POST" and request.form.get("handling") == "send_maanedsbackup":
+        modt = jobs.maanedsbackup_modtagere()
+        if jobs.send_maanedsbackup(maaned, modt):
+            flash(f"Månedsbackuppen for {maaned_navn(maaned)} er sendt til {', '.join(modt)}.", "ok")
+        else:
+            flash("Månedsbackuppen kunne ikke sendes – se System › Log.", "fejl")
+        return redirect(url_for("kontor_opgoerelse", maaned=maaned))
     rows, laast = forbrug.maanedsopgoerelse(maaned)
     return render_template("kontor_opgoerelse.html", rows=rows, laast=laast, maaned=maaned,
                            fordeling=forbrug.gruppe_fordeling(rows), maaneder=_maaned_liste(),
@@ -877,6 +950,16 @@ def kontor_opgoerelse_csv():
         abort(400)
     return Response(rapport.opgoerelse_csv(maaned), mimetype="text/csv",
                     headers={"Content-Disposition": f"attachment; filename=elforbrug-{maaned}.csv"})
+
+
+@app.route("/kontor/maanedsbackup.csv")
+@kontor_kraevet
+def kontor_maanedsbackup_csv():
+    maaned = request.args.get("maaned") or maaned_str(i_dag())
+    if not re.fullmatch(r"\d{4}-\d{2}", maaned):
+        abort(400)
+    return Response(maanedsbackup.csv_fil(maaned), mimetype="text/csv",
+                    headers={"Content-Disposition": f"attachment; filename={maanedsbackup.filnavn(maaned)}"})
 
 
 @app.route("/kontor/vinter.csv")
@@ -1137,8 +1220,8 @@ def system_debug():
 @app.route("/kontor/import", methods=["GET", "POST"])
 @kontor_kraevet
 def kontor_import():
-    """CSV med kolonnerne: maaler;placering;email;navn;baad;telefon;start_dato.
-    Kræver maaler eller email; email uden maaler opretter kun brugeren."""
+    """CSV med kolonnerne: maaler;placering;email;navn;baad;telefon;start_dato (+ valgfrit slut_dato, rolle).
+    Kræver maaler eller email; email uden maaler opretter kun brugeren. Månedsbackuppen kan importeres direkte."""
     resultat = None
     if request.method == "POST":
         f = request.files.get("fil")
@@ -1167,12 +1250,29 @@ def kontor_import():
                         c.execute("UPDATE brugere SET telefon=COALESCE(NULLIF(?,''), telefon) WHERE id=?",
                                   (r.get("telefon", ""), b["id"]))
                         resultat["nye"] += ny
+                        rolle = r.get("rolle", "")
+                        if ny and rolle in ROLLER and rolle != "bruger" and er_admin(g.bruger):
+                            c.execute("UPDATE brugere SET rolle=? WHERE id=?", (rolle, b["id"]))   # fx genskabelse
                         if nr:   # uden målernummer oprettes kun brugeren – måler tildeles senere
+                            start = parse_dato(r.get("start_dato") or i_dag().isoformat())
+                            # samme tildeling findes allerede (fx samme fil eller månedsbackup importeret igen)
+                            t = c.execute("SELECT * FROM tildelinger WHERE maaler_id=? AND bruger_id=? AND start_dato=?",
+                                          (nr, b["id"], start.isoformat())).fetchone() if r.get("start_dato") else None
                             aktiv = forbrug.aktive_tildelinger(c, maaler_id=nr)
-                            if not (aktiv and aktiv[0]["bruger_id"] == b["id"]):
-                                _tildel(c, nr, b["id"], parse_dato(r.get("start_dato") or i_dag().isoformat()), baad)
+                            if not t and aktiv and aktiv[0]["bruger_id"] == b["id"]:
+                                t = aktiv[0]
+                            if not t:
+                                _tildel(c, nr, b["id"], start, baad)
+                                t = c.execute("SELECT * FROM tildelinger WHERE maaler_id=? ORDER BY start_ts DESC "
+                                              "LIMIT 1", (nr,)).fetchone()
                             elif baad:
-                                c.execute("UPDATE tildelinger SET baad=? WHERE id=?", (baad, aktiv[0]["id"]))
+                                c.execute("UPDATE tildelinger SET baad=? WHERE id=?", (baad, t["id"]))
+                            if r.get("slut_dato") and t["slut_ts"] is None:   # afsluttet tildeling (månedsbackup)
+                                slut = parse_dato(r["slut_dato"])
+                                if dato_ts(slut) <= t["start_ts"]:
+                                    raise ValueError("slut_dato skal være efter start_dato")
+                                c.execute("UPDATE tildelinger SET slut_dato=?, slut_ts=? WHERE id=?",
+                                          (slut.isoformat(), dato_ts(slut), t["id"]))
                 if r.get("email") and inviter and ny:
                     with db.db() as c:
                         b = c.execute("SELECT * FROM brugere WHERE id=?", (b["id"],)).fetchone()

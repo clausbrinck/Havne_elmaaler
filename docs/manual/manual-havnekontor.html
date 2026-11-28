@@ -140,6 +140,19 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
     <li><b>Søg</b> på navn, e-mail, båd eller målernummer. Klik på et navn for at åbne medlemmet.</li>
   </ol>
 </div>
+<h3>Invitation eller besked til mange på én gang</h3>
+<div class="billede bred">
+  <img src="billeder/kontor-brugere-valg.png">
+  <ol class="tal">
+    <li><b>Vis kun</b> en gruppe, fx <i>Ingen kode og ikke inviteret</i>, <i>Inviteret, ikke logget ind</i> eller <i>Uden måler</i>.</li>
+    <li><b>Søg</b> for at gøre gruppen mindre.</li>
+    <li><b>Flueben</b> ved de brugere, der skal have mailen. Fluebenet øverst vælger alle viste. Du kan fjerne enkelte bagefter.</li>
+    <li><b>Skriv besked til valgte</b> åbner et felt til emne og tekst. Klubbens signatur sættes automatisk nederst, og med fluebenet starter mailen med »Hej &lt;navn&gt;,«.</li>
+    <li><b>Send invitation til valgte</b> sender linket, hvor medlemmet vælger adgangskode (gyldigt i 14 dage). Status viser bagefter <i>inviteret</i> og hvornår.</li>
+    <li><b>Send besked</b> – du bliver spurgt, før noget sendes, og kan se hvor mange der er valgt.</li>
+  </ol>
+</div>
+<div class="tip"><b>Hver modtager får sin egen mail</b>Ingen kan se de andres e-mailadresser. Kun brugere, der er vist på skærmen, får mailen – også selvom de var valgt før, du søgte. Inaktive brugere springes over. Beskeden noteres i loggen.</div>
 <div class="billede bred">
   <img src="billeder/kontor-bruger.png">
   <ol class="tal">
@@ -182,6 +195,7 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
     <li><b>Hent CSV (Excel)</b> – én linje pr. måler og båd med kWh, gruppe og pris.</li>
     <li><b>Hele vinterperioden pr. bruger</b> – samlet opkrævning for november–marts pr. medlem og båd. Det er den, der bruges ved standerhejsning.</li>
     <li><b>Genberegn</b> (eller <i>Lås måned</i>). Måneden låses automatisk den 1. kl. 00:20. Er der rettet noget bagefter, fx en tildeling, genberegnes den her.</li>
+    <li><b>Månedsbackup</b> – hent den for den valgte måned eller send den på mail nu (se nedenfor).</li>
     <li><b>Søg</b> i opgørelsens rækker – én pr. måler og båd.</li>
   </ol>
 </div>
@@ -192,6 +206,14 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
     <li><b>Fordeling på forbrugsgrupper</b> med antal både og beløb. Indeværende måned står som <i>foreløbig</i>.</li>
   </ol>
 </div>
+<h3>Månedsbackup</h3>
+<p>Den 1. i hver måned får alle administratorer og havnekontoret en mail med <b>månedsbackuppen</b> for den forrige måned
+  – en CSV-fil med én linje pr. måler og tildeling: medlem (e-mail, navn, telefon), båd, tildelingens start- og slutdato,
+  <b>tællerstanden ved start og slut</b> af måneden og forbruget i kWh med gruppe og pris. Til sidst står brugere uden måler.
+  På <b>Opgørelse</b> kan du hente den for en hvilken som helst måned (<i>Hent månedsbackup</i>) eller sende den igen (<i>Send på mail nu</i>).</p>
+<div class="tip"><b>Gem mailene</b>Månedsbackuppen er nødløsningen, hvis serveren og alle andre backups går tabt. Filen kan importeres
+  direkte under <b>Brugere → Importér fra CSV</b> i et nyt system, så alle medlemmer og tildelinger kommer tilbage. Brug den
+  nyeste månedsbackup. Mailene er også dokumentation for afregningen, så læg dem i en mappe og slet dem ikke.</div>
 <div class="vigtigt"><b>Forbrug uden tildelt bruger</b>Står der rækker med <i>(ikke tildelt)</i>, har en måler haft forbrug uden en båd. Tildel måleren pr. den rigtige startdato og genberegn måneden – ellers kan forbruget ikke opkræves.</div>
 
 <h2>Mails til havnekontoret</h2>
@@ -214,7 +236,7 @@ månedens forbrug, og det samlede beløb opkræves ved standerhejsning.</p>
     <tr><td>Hver nat kl. 03</td><td>Backup af databasen (og kopi til OneDrive)</td><td>Automatisk</td></tr>
     <tr><td>Hver morgen kl. 06</td><td>Daglige e-mails; mandag også ugentlige</td><td>Automatisk</td></tr>
     <tr><td>Den 1. kl. 00:20</td><td>Forrige måned låses</td><td>Automatisk</td></tr>
-    <tr><td>Den 1. kl. 06</td><td>Månedsopgørelser til medlemmer og havnekontor; nov–mar også PDF-rapport til bestyrelsen</td><td>Automatisk</td></tr>
+    <tr><td>Den 1. kl. 06</td><td>Månedsopgørelser til medlemmer og havnekontor; månedsbackup til administratorer og havnekontor; nov–mar også PDF-rapport til bestyrelsen</td><td>Automatisk</td></tr>
     <tr><td>Oktober</td><td>Tjek at alle vinterliggere har den rigtige måler og båd. Ryd op i <i>Målere der ikke er i brug</i>.</td><td>Havnekontoret</td></tr>
     <tr><td>Hver måned i vinteren</td><td>Se månedsopgørelsen igennem for <i>(ikke tildelt)</i>-rækker</td><td>Havnekontoret</td></tr>
     <tr><td>April</td><td>Hent <i>Hele vinterperioden pr. bruger</i> til opkrævning ved standerhejsning</td><td>Havnekontoret / kasserer</td></tr>

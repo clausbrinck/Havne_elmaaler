@@ -81,6 +81,10 @@ header.top button { background: transparent; border-color: rgba(255,255,255,.4);
 .login-boks form, .login-boks .felt { text-align: left; }
 .login-logo { display: block; margin: 0 auto 6px; width: 112px; height: 112px; border-radius: 50%; box-shadow: 0 2px 10px rgba(11,58,91,.18); }
 .maaler-hoved { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.valg-linje { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 10px 0 6px; }
+.valg-linje .valg-knapper { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.besked-boks { border: 1px solid var(--linje); border-radius: 8px; padding: 12px; margin: 6px 0 12px; }
+.besked-boks textarea { width: 100%; font: inherit; }
 .stor-effekt { font-size: 40px; font-weight: 700; color: var(--hav); line-height: 1; }
 .stor-effekt small { font-size: 16px; color: var(--graa); font-weight: 500; }
 .bar { height: 10px; background: #edf1f4; border-radius: 99px; overflow: hidden; margin: 6px 0 2px; }

@@ -22,7 +22,7 @@
     <li>3 · Månedsrapporten til bestyrelsen
       <ol></ol></li>
     <li>4 · Backup i OneDrive
-      <ol><li>Det skal du bruge</li><li>Trin 1–6: opsætning</li><li>Daglig kontrol</li><li>Gendan fra OneDrive</li></ol></li>
+      <ol><li>Det skal du bruge</li><li>Trin 1–6: opsætning</li><li>Daglig kontrol</li><li>Gendan fra OneDrive</li><li>Nødløsning: månedsbackuppen</li></ol></li>
     <li>5 · Hardware: målere og Home Assistant
       <ol><li>Sådan hænger det sammen</li><li>Elmåleren (Shelly EM Mini Gen4)</li><li>Opsætning af en ny måler</li><li>Nulstil og udskift en måler</li><li>Opsætning af Home Assistant</li><li>Godt Zigbee-net på havnen</li></ol></li>
     <li>6 · Drift og vedligehold
@@ -262,6 +262,20 @@
     <code>elmaaler.db-wal</code> og <code>elmaaler.db-shm</code>, hvis de findes, og start stacken igen.</li>
   <li>Log ind og tjek, at brugere, tildelinger og opgørelser er, som de skal være.</li>
 </ol>
+<h2>Nødløsning: genskab fra månedsbackuppen</h2>
+<p>Den 1. i hver måned sender systemet <b>månedsbackuppen</b> (CSV) til alle administratorer og havnekontoret, og en kopi
+  lægges i backupmappen og kommer med til OneDrive. Kan hverken databasen eller OneDrive-kopierne bruges, så:</p>
+<ol class="trin">
+  <li>Installér et nyt system og log ind som systemadministrator.</li>
+  <li>Find den <b>nyeste</b> mail <i>Elmålere – månedsbackup</i> og gem den vedhæftede fil.</li>
+  <li>Gå til <b>Brugere → Importér fra CSV</b> og importér filen uden invitationer. Medlemmer, havnekontor-brugere
+    (med rolle), målernes placering og alle tildelinger med båd og start-/slutdato kommer tilbage.</li>
+  <li>Send derefter invitationer fra <b>Brugere</b> (vælg <i>Ingen adgangskode</i>, flueben øverst, <i>Send invitation til valgte</i>).</li>
+</ol>
+<div class="info"><b>Hvad mangler bagefter?</b>Den detaljerede historik (graferne og låste opgørelser før genskabelsen) kommer ikke
+  med. Målerne tæller selv videre, så forbruget fra den dag systemet kører igen, er korrekt. Forbruget mellem månedsbackuppen
+  og genskabelsen kan regnes ud fra kolonnen <code>taeller_slut_kwh</code> og målerens tællerstand i Home Assistant, og
+  tidligere måneders opgørelser står i de gemte mails.</div>
 <div class="tip"><b>Øv det én gang om året</b>Hent en backup til en test-pc og se, at den kan åbnes. En backup er først sikker, når man har set den virke.</div>
 
 <h1><span class="nr">5</span><div>Hardware: målere og Home Assistant<small>Elmåleren, Shelly EM Mini Gen4 og Home Assistant med ZHA</small></div></h1>
@@ -438,6 +452,7 @@
   <li>En krypteret kopi lægges i klubbens OneDrive. Tjek jævnligt, at <b>System → Database &amp; backup</b> viser en grå boks med et nyt tidspunkt. Se kapitel 4.</li>
   <li>De to krypteringskoder skal ligge i klubbens password manager eller i pengeskabet.</li>
   <li>Prøv en gendannelse én gang om året på en test-pc.</li>
+  <li>Månedsbackuppen (CSV) sendes den 1. til administratorer og havnekontor – nødløsning, se kapitel 4.</li>
 </ul>
 <h2>Automatiske job</h2>
 <table>
@@ -449,7 +464,7 @@
     <tr><td>Hver nat kl. 03</td><td>Backup og kopi til OneDrive</td></tr>
     <tr><td>Hver morgen kl. 06</td><td>Daglige/ugentlige e-mails</td></tr>
     <tr><td>Den 1. kl. 00:20</td><td>Forrige måned låses</td></tr>
-    <tr><td>Den 1. kl. 06</td><td>Månedsmails; nov–mar PDF-rapport til bestyrelsen</td></tr>
+    <tr><td>Den 1. kl. 06</td><td>Månedsmails; månedsbackup (CSV) til administratorer og havnekontor; nov–mar PDF-rapport til bestyrelsen</td></tr>
   </tbody>
 </table>
 <h2>Manualerne på websiden</h2>

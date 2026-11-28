@@ -130,8 +130,16 @@ BILLEDER = [
      [["select[name=bruger_id]", "", 1], ["input[name=email]", "", 2], ["input[name=start_dato]", "", 3],
       ["button", "Tildel måler", 4], ["button", "Fjern fra bruger", 5], ["input[name=baad]", "", 6]]),
     ("kontor-brugere", "kontor", "/kontor/brugere", PC, "", None,
-     [["a.knap", "Importér fra CSV", 1], ["a.knap", "Målere der ikke er i brug", 2], ["button", "Opret bruger", 3],
+     [["a.knap", "Importér fra CSV", 1], ["a.knap", "Målere der ikke er i brug", 2], ["summary", "Opret ny bruger", 3],
       ["input[data-filter]", "", 4]]),
+    ("kontor-brugere-valg", "kontor", "/kontor/brugere", PC,
+     "var s=__find('input[data-filter]'); s.value='Jensen'; s.dispatchEvent(new Event('input'));"
+     "__find('button[data-vaelg=synlige]').click(); __find('[data-aabn]').click();"
+     "__find('input[name=emne]').value='Strømmen slukkes fredag';"
+     "__find('textarea[name=tekst]').value='Fredag kl. 8-10 er strømmen på bro 3 slukket pga. arbejde på standerne.\\n\\nMvh havnekontoret';",
+     [["form[data-valg]", ""]],
+     [["select[data-vis-filter]", "", 1], ["input[data-filter]", "", 2], ["th input[data-vaelg]", "", 3],
+      ["button[data-aabn]", "", 4], ["button[data-bekraeft]:not([formaction])", "", 5], ["button[formaction]", "", 6]]),
     ("kontor-bruger", "kontor", "__hans__", PC, "", None,
      [[".kort", "Oplysninger", 1], [".kort", "Adgang", 2], ["button", "Fjern", 3], ["button", "Tildel", 4]]),
     ("kontor-ubrugte", "kontor", "/kontor/ubrugte?dage=14&kwh=40", PC, "", None,
@@ -141,7 +149,7 @@ BILLEDER = [
      [["pre", "", 1], ["input[type=file]", "", 2], ["label.check", "invitation", 3]]),
     ("kontor-opgoerelse", "admin", "/kontor/opgoerelse?maaned=2026-10", PC, "", None,
      [["select", "", 1], ["a.knap", "Hent CSV", 2], ["a.knap", "Hele vinterperioden", 3], ["button", "Genberegn", 4],
-      ["input[data-filter]", "", 5]]),
+      ["a.knap", "Hent månedsbackup", 5], ["input[data-filter]", "", 6]]),
     ("kontor-opgoerelse-nov", "admin", "/kontor/opgoerelse?maaned=2026-11", PC, "",
      [[".kort", "Foreløbig"], [".kort", "Fordeling på forbrugsgrupper"]],
      [["a.knap", "Månedsrapport (PDF)", 1], [".kort", "Fordeling på forbrugsgrupper", 2]]),

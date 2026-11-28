@@ -54,7 +54,8 @@ CREATE TABLE IF NOT EXISTS brugere (
     mail_uge      INTEGER NOT NULL DEFAULT 0,
     mail_maaned   INTEGER NOT NULL DEFAULT 1,
     mail_offline  INTEGER NOT NULL DEFAULT 1,
-    visning       TEXT NOT NULL DEFAULT 'enkel'     -- Min side: enkel | avanceret
+    visning       TEXT NOT NULL DEFAULT 'enkel',    -- Min side: enkel | avanceret
+    inviteret     INTEGER                           -- seneste invitation sendt (ts)
 );
 
 CREATE TABLE IF NOT EXISTS tildelinger (
@@ -210,6 +211,8 @@ def _migrer(c):
             c.execute(f"ALTER TABLE tildelinger ADD COLUMN {kol} {typ}")
     if "visning" not in kolonner("brugere"):
         c.execute("ALTER TABLE brugere ADD COLUMN visning TEXT NOT NULL DEFAULT 'enkel'")
+    if "inviteret" not in kolonner("brugere"):
+        c.execute("ALTER TABLE brugere ADD COLUMN inviteret INTEGER")
 
 
 def hent(noegle):

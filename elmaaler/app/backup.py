@@ -63,6 +63,18 @@ def lav_backup(aarsag="automatisk"):
     return ud
 
 
+def gem_maanedsbackup(navn, data):
+    """Gem månedsbackuppen (CSV) i backupmappen og evt. BACKUP_EXTRA_DIR. Den slettes aldrig automatisk og
+    kommer med til skyen ved næste kopiering."""
+    for mappe in filter(None, [config.BACKUP_DIR, config.BACKUP_EXTRA_DIR]):
+        try:
+            os.makedirs(mappe, exist_ok=True)
+            with open(os.path.join(mappe, navn), "wb") as f:
+                f.write(data)
+        except OSError as e:
+            db.log("fejl", f"Kunne ikke gemme {navn} i {mappe}: {e}")
+
+
 def _er_maanedsbackup(sti):
     """Den første backup i en måned (dato den 1.) gemmes længere."""
     m = re.search(r"elmaaler-(\d{4})(\d{2})(\d{2})-", os.path.basename(sti))
@@ -88,7 +100,8 @@ def kopier_til_sky():
     try:
         mål = config.BACKUP_RCLONE_REMOTE
         kommandoer = [
-            ["rclone", "copy", config.BACKUP_DIR, mål, "--include", "elmaaler-*.db.gz"],
+            ["rclone", "copy", config.BACKUP_DIR, mål, "--include", "elmaaler-*.db.gz",
+             "--include", "elmaaler-maanedsbackup-*.csv"],
             # samme regler som lokalt: daglige i BACKUP_KEEP_DAYS dage, månedsbackups (den 1.) i 13 måneder
             ["rclone", "delete", mål, "--min-age", f"{config.BACKUP_KEEP_DAYS}d",
              "--filter", "- elmaaler-??????01-*", "--filter", "+ elmaaler-*.db.gz", "--filter", "- *"],

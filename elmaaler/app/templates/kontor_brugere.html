@@ -26,21 +26,56 @@
 </div>
 
 <div class="kort">
+  <form method="post" action="{{ url_for('kontor_inviter_valgte') }}" id="inviter-form" data-valg="bid">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
   <div class="maaler-hoved"><h2>{{ brugere | length }} brugere</h2>
-    <input type="search" placeholder="Søg navn, email, båd, måler…" data-filter="brugertabel" style="width:260px"></div>
+    <span style="display:flex;gap:8px;flex-wrap:wrap">
+      <select data-vis-filter="brugertabel" style="width:auto">
+        <option value="">Alle</option><option value="ingen-kode">Ingen adgangskode</option>
+        <option value="ikke-inviteret">Ingen kode og ikke inviteret</option><option value="inviteret">Inviteret, ikke logget ind</option>
+        <option value="aktiv">Aktive</option><option value="inaktiv">Inaktive</option>
+        <option value="medlem">Medlemmer</option><option value="uden-maaler">Uden måler</option></select>
+      <input type="search" placeholder="Søg navn, email, båd, måler…" data-filter="brugertabel" style="width:260px"></span></div>
+  <div class="valg-linje">
+    <button type="button" class="sek lille" data-vaelg="synlige">Vælg alle viste</button>
+    <button type="button" class="sek lille" data-vaelg="ingen">Fravælg alle</button>
+    <span class="muted"><b data-valgt-antal>0</b> valgt</span>
+    <span class="valg-knapper">
+      <button type="button" class="sek" data-kraever-valg disabled data-aabn="besked-boks">✎ Skriv besked til valgte</button>
+      <button data-kraever-valg disabled
+        data-bekraeft="Send invitation (link til at vælge adgangskode) til de valgte brugere?">✉ Send invitation til valgte</button></span>
+  </div>
+  <div id="besked-boks" class="besked-boks" data-felter hidden>
+    <div class="felt"><label>Emne</label><input type="text" name="emne" maxlength="150" data-paakraevet></div>
+    <div class="felt"><label>Tekst</label><textarea name="tekst" rows="8" data-paakraevet
+      placeholder="Skriv beskeden her. Klubbens signatur sættes automatisk nederst."></textarea></div>
+    <label class="check"><input type="checkbox" name="hej" checked> <span>Start med »Hej &lt;navn&gt;,«</span></label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button formaction="{{ url_for('kontor_besked_valgte') }}" data-kraever-valg disabled
+        data-bekraeft="Send beskeden til de valgte brugere?">Send besked til <b data-valgt-antal>0</b> valgte</button>
+      <button type="button" class="sek" data-luk="besked-boks">Annullér</button></div>
+    <p class="muted">Hver modtager får sin egen mail, så ingen kan se de andres adresser. Inaktive brugere springes over.</p>
+  </div>
   <div class="tabel-wrap"><table id="brugertabel">
-    <thead><tr><th>Navn</th><th>Email</th><th class="skjul-mobil">Både</th><th>Målere</th><th class="skjul-mobil">Sidste login</th><th>Status</th></tr></thead>
+    <thead><tr><th style="width:28px"><input type="checkbox" data-vaelg="synlige" title="Vælg alle viste"></th><th>Navn</th><th>Email</th><th class="skjul-mobil">Både</th><th>Målere</th><th class="skjul-mobil">Sidste login</th><th>Status</th></tr></thead>
     <tbody>
     {% for b in brugere %}
-      <tr {% if not b.aktiv %}style="opacity:.5"{% endif %}>
+      {% set tags = ['aktiv' if b.aktiv else 'inaktiv', 'medlem' if b.rolle == 'bruger' else b.rolle] %}
+      {% if b.aktiv and not b.pw_hash %}{% set tags = tags + ['ingen-kode', 'inviteret' if b.inviteret else 'ikke-inviteret'] %}{% endif %}
+      {% if not b.maalere %}{% set tags = tags + ['uden-maaler'] %}{% endif %}
+      <tr data-tags="{{ tags | join(' ') }}" {% if not b.aktiv %}style="opacity:.5"{% endif %}>
+        <td><input type="checkbox" name="bid" value="{{ b.id }}" {{ 'disabled' if not b.aktiv or (b.rolle == 'admin' and not er_admin) }}></td>
         <td><a href="{{ url_for('kontor_bruger', bid=b.id) }}">{{ b.navn or '(uden navn)' }}</a> {{ rl.badge(b.rolle) }}</td>
         <td>{{ b.email }}</td><td class="skjul-mobil">{{ b.baade or '' }}</td>
         <td>{{ b.maalere or '' }}</td>
         <td class="skjul-mobil" data-sort="{{ b.sidste_login or '' }}">{{ b.sidste_login | siden }}</td>
-        <td>{% if not b.aktiv %}<span class="badge ukendt">inaktiv</span>{% elif not b.pw_hash %}<span class="badge ukendt">ingen kode</span>{% else %}<span class="badge online">aktiv</span>{% endif %}</td>
+        <td>{% if not b.aktiv %}<span class="badge ukendt">inaktiv</span>{% elif not b.pw_hash %}<span class="badge ukendt">ingen kode</span>
+          {% if b.inviteret %}<br><span class="muted" style="font-size:.85em">inviteret {{ b.inviteret | siden }}</span>{% endif %}
+          {% else %}<span class="badge online">aktiv</span>{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table></div>
+  </form>
 </div>
 {% endblock %}

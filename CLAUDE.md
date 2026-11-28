@@ -72,8 +72,15 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── ZHA (Zigbee Home Automation) ─�
   medlemmets udtag) · `dag_graense_kwh` (døgnforbrug fra kl. 00, 1/dag via `varsler_sendt`) · `stop_alarm_min` (under 5 W
   i N min, kun efter der er set forbrug siden opstart; mail igen når strømmen er tilbage). Havnekontoret: overbelastning
   (≥ `overlast_a` A i `overlast_minutter`, højst 1 pr. 6 t pr. udtag) til modtagerne af offline-mails.
+- **Brugere-siden – flueben:** filter (`data-vis-filter` mod `tr[data-tags]`) + søgning virker sammen; generisk
+  `form[data-valg]` i `app.js` (vælg viste, tæller, kun synlige sendes). Knapper: invitation (`/kontor/brugere/inviter`,
+  gemmer `brugere.inviteret`) og egen besked (`/kontor/brugere/besked`, én mail pr. modtager med fælles signatur, logges).
 - **Forbrugsrapport på mail:** Min side → `/min-side/rapport` (`rapport.bruger_periode`), tekst + CSV pr. dag,
   maks 5 pr. bruger pr. time.
+- **Månedsbackup** (`maanedsbackup.py`): CSV pr. måned med pr. måler/tildeling bruger, rolle, båd, start/slut_dato,
+  tællerstand ved periodens start/slut (fra `aflaesninger`) og kWh/gruppe/pris + brugere uden måler. Sendes den 1. til
+  alle aktive admin/kontor (`jobs.send_maanedsbackup`, uanset mailvalg), gemmes i backupmappen (kommer med til rclone).
+  Hent/send på Opgørelse. Kan importeres direkte i `/kontor/import` (som forstår `slut_dato` og `rolle`) – nødgendannelse.
 - **Månedslås:** den 1. kl. 00:20 fryses forrige måned i `maanedsopgoerelser`; kan genberegnes manuelt.
 - **Zigbee = ZHA** (ikke Zigbee2MQTT/MQTT – valgt 22-11-2026). Enhed navngives `ElmaalerNNN` i HA → kun
   `sensor.elmaalerNNN_summation_delivered/_power/_current/_voltage/_ac_frequency/_lqi` (mønstre i `config.py`, kan overstyres i .env).

@@ -17,6 +17,10 @@
     <li>Er måleren allerede tildelt en anden, afsluttes den tildeling pr. <code>start_dato</code> (standard: i dag).</li>
     <li>Rækker uden email opdaterer kun placeringen.</li>
     <li><code>placering</code> bruges kun, når en systemadministrator importerer (måleropsætning).</li>
+    <li>Valgfrit: <code>slut_dato</code> afslutter tildelingen pr. den dato, og <code>rolle</code> (kontor/admin) gives til nye
+      brugere, når en systemadministrator importerer.</li>
+    <li><b>Månedsbackuppen</b> (Opgørelse → Hent månedsbackup) kan importeres direkte for at genskabe brugere og tildelinger.
+      Det er trygt at importere den samme fil igen.</li>
   </ul>
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf" value="{{ csrf() }}">

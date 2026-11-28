@@ -3,7 +3,7 @@ import logging
 import time
 from datetime import timedelta
 
-from . import backup, bestyrelse, collector, config, db, forbrug, mailer, rapport, simulering
+from . import backup, bestyrelse, collector, config, db, forbrug, maanedsbackup, mailer, rapport, simulering
 from .tid import nu, lokal, i_dag, dato_ts, maaned_str, forrige_maaned, maaned_navn, fmt_tid
 
 log = logging.getLogger("jobs")
@@ -404,12 +404,41 @@ def planlagte():
                             vedhaeft=[(f"elforbrug-{m}.csv", rapport.opgoerelse_csv(m), "text/csv")],
                             signatur=False)
 
+        # månedsbackup (CSV) til alle administratorer og havnekontoret – hver måned
+        if _engang(f"job:maanedsbackup:{m}"):
+            send_maanedsbackup(m)
+
         # PDF-rapport til bestyrelsen – kun for afregningsmåneder (nov–mar)
         if forbrug.afregnes(m) and bestyrelse.modtagere() and _engang(f"job:bestyrelse:{m}"):
             if simulering.aktiv():
                 db.log("mail", f"Bestyrelsesrapport for {m} ikke sendt – der er simuleret forbrug i systemet")
             else:
                 send_bestyrelsesrapport(m)
+
+
+def maanedsbackup_modtagere():
+    """Alle aktive administratorer og havnekontor-brugere – uanset deres mailvalg."""
+    with db.db() as c:
+        return sorted({r["email"] for r in c.execute(
+            "SELECT email FROM brugere WHERE rolle IN ('kontor','admin') AND aktiv=1")})
+
+
+def send_maanedsbackup(m, modtagere=None):
+    """Lav månedsbackuppen for måned m, gem en kopi i backupmappen og send den. Returnerer True hvis sendt."""
+    modtagere = modtagere or maanedsbackup_modtagere()
+    try:
+        data = maanedsbackup.csv_fil(m)
+        tekst = maanedsbackup.mailtekst(m)
+    except Exception as e:  # noqa: BLE001
+        log.exception("Månedsbackup fejlede")
+        db.log("fejl", f"Månedsbackup for {m} kunne ikke laves: {e}")
+        return False
+    backup.gem_maanedsbackup(maanedsbackup.filnavn(m), data)
+    ok = mailer.send(modtagere, f"Elmålere – månedsbackup {maaned_navn(m)}", tekst,
+                     vedhaeft=[(maanedsbackup.filnavn(m), data, "text/csv")], signatur=False)
+    db.log("backup" if ok else "fejl", f"Månedsbackup for {m} " + (f"sendt til {', '.join(modtagere)}" if ok
+                                                                   else "kunne ikke sendes"))
+    return ok
 
 
 def send_bestyrelsesrapport(m):
