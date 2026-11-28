@@ -57,7 +57,7 @@
         <td>{{ gr.lqi(m.linkquality) }}</td>
         <td class="n">{{ m.strom_a | dk(1) if m.tilgaengelig and m.strom_a is not none else '–' }}</td>
         <td class="n">{{ m.spaending_v | dk(0) if m.tilgaengelig and m.spaending_v is not none else '–' }}</td>
-        <td>{{ m.sidst_set | siden }}{% if m.offline_siden %}<br><span class="muted">offline siden {{ m.offline_siden | tid }}</span>{% endif %}</td></tr>
+        <td data-sort="{{ m.sidst_set or '' }}">{{ m.sidst_set | siden }}{% if m.offline_siden %}<br><span class="muted">offline siden {{ m.offline_siden | tid }}</span>{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table></div>

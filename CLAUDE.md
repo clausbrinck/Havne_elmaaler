@@ -57,6 +57,9 @@ Shelly EM Mini Gen4 ~Zigbee~ SLZB-MR1U ── ZHA (Zigbee Home Automation) ─�
   indstillinger, debug). Tjek med `er_kontor()`/`er_admin()` og `kontor_kraevet`/`admin_kraevet` i `web.py`.
   `ADMIN_EMAIL` gøres til admin ved start, hvis der ingen admin findes. Kun admin kan give admin-rollen, og
   havnekontoret kan ikke ændre en admins konto.
+- **Sortering af tabeller** (kun sider under `/kontor` og `/system`): sidst i `static/app.js` – tryk på overskrift =
+  stigende/faldende/oprindelig, huskes i `sessionStorage`. Tekst tolkes som dansk tal/dato; ellers sæt `data-sort` på cellen
+  (fx tidsstempel ved `| siden`). Tomme/grå pladsholdere nederst, rækker med `<th>` (I alt) står fast, `data-ikke-sorter` slår fra.
 - **Fjern måler fra bruger** = afslut tildelingen pr. dato (`_fjern_tildeling`); historik bevares. Siden
   `/kontor/ubrugte` viser tildelte målere uden forbrug i N dage, så de kan fjernes samlet.
 - **Min side – enkel/avanceret visning:** `brugere.visning` (standard `enkel`), skiftes med `/min-side/visning`.

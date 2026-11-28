@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "elmaaler-sim",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-Command", "cd elmaaler; $env:DATA_DIR='./testdata'; $env:SOURCE='sim'; $env:SIM_BACKFILL_DAYS='45'; $env:ADMIN_EMAIL='a@b.dk'; $env:ADMIN_PASSWORD='testtest1'; $env:PORT='8000'; python -m app.main"],
+      "port": 8000
+    }
+  ]
+}

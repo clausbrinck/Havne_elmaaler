@@ -292,3 +292,92 @@
     });
   });
 })();
+
+// Sortering af tabeller på havnekontorets og systemadministratorens sider: tryk på en kolonneoverskrift.
+// 1. tryk stigende, 2. tryk faldende, 3. tryk tilbage til den oprindelige rækkefølge. Huskes mens fanen er åben.
+// En celle (eller et element i den) kan angive sin sorteringsværdi med data-sort; ellers læses teksten
+// (danske tal "1.234,5 kr", datoer "21-11-2026 14:30", målernumre og placeringer sorteres "naturligt").
+// Tabeller med data-ikke-sorter (fx redigeringsformularer) springes over.
+(function () {
+  if (!/^\/(kontor|system)(\/|$)/.test(location.pathname)) return;
+  var talRe = /^-?\d[\d.]*(,\d+)?\s*(kr|kwh|w|a|v|hz|%)?$/i;
+  var datoRe = /^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}))?/;
+
+  function noegle(td) {
+    if (!td) return null;
+    // En celle med kun en grå pladsholder ("ledig", "ikke afregnet") tæller som tom
+    if (td.children.length === 1 && td.children[0].classList.contains("muted") &&
+        td.textContent.trim() === td.children[0].textContent.trim()) return null;
+    var el = td.hasAttribute("data-sort") ? td : td.querySelector("[data-sort]");
+    var v;
+    if (el) v = el.getAttribute("data-sort");
+    else {
+      var inp = td.querySelector("input:not([type=hidden]), select, textarea");
+      if (inp && inp.type === "checkbox") return inp.checked ? 1 : 0;
+      v = inp ? inp.value : td.textContent;
+    }
+    v = (v || "").replace(/\s+/g, " ").trim();
+    if (v === "" || v === "–" || v === "-") return null;
+    if (talRe.test(v)) return parseFloat(v.replace(/[^\d,-]/g, "").replace(",", "."));
+    var d = datoRe.exec(v);
+    if (d) return Number(d[3] + d[2] + d[1] + (d[4] || "00") + (d[5] || "00"));
+    if (!isNaN(v)) return Number(v);
+    return v.toLowerCase();
+  }
+  function sammenlign(a, b) {
+    if (typeof a === "number" && typeof b === "number") return a - b;
+    return String(a).localeCompare(String(b), "da", { numeric: true, sensitivity: "base" });
+  }
+
+  document.querySelectorAll("table").forEach(function (tabel, nr) {
+    var hoved = tabel.tHead && tabel.tHead.rows[0], krop = tabel.tBodies[0];
+    if (!hoved || !krop || tabel.hasAttribute("data-ikke-sorter")) return;
+    var raekker = Array.prototype.slice.call(krop.rows);
+    // Rækker med en overskriftscelle (fx "I alt") bliver stående nederst
+    var data = raekker.filter(function (tr) { return !tr.querySelector("th"); });
+    if (data.length < 2) return;
+    var faste = raekker.filter(function (tr) { return data.indexOf(tr) < 0; });
+    var lager = "elmaaler-sort:" + location.pathname + ":" + (tabel.id || nr);
+    var ths = Array.prototype.slice.call(hoved.cells);
+
+    function sorter(kol, retning) {
+      ths.forEach(function (th) { th.removeAttribute("aria-sort"); });
+      var liste = data.slice();
+      if (retning) {
+        ths[kol].setAttribute("aria-sort", retning === 1 ? "ascending" : "descending");
+        var n = liste.map(function (tr, i) { return { tr: tr, i: i, k: noegle(tr.cells[kol]) }; });
+        n.sort(function (a, b) {
+          if (a.k === null || b.k === null) return (a.k === null) - (b.k === null) || a.i - b.i;  // tomme altid nederst
+          return sammenlign(a.k, b.k) * retning || a.i - b.i;
+        });
+        liste = n.map(function (x) { return x.tr; });
+      }
+      liste.concat(faste).forEach(function (tr) { krop.appendChild(tr); });
+      try {
+        if (retning) sessionStorage.setItem(lager, kol + ":" + retning); else sessionStorage.removeItem(lager);
+      } catch (e) {}
+    }
+
+    ths.forEach(function (th, kol) {
+      if (!th.textContent.trim() || th.colSpan > 1) return;
+      th.classList.add("sorterbar");
+      th.tabIndex = 0;
+      th.title = "Sortér efter " + th.textContent.trim();
+      function klik() {
+        var nu = th.getAttribute("aria-sort");
+        sorter(kol, nu === "ascending" ? -1 : nu === "descending" ? 0 : 1);
+      }
+      th.addEventListener("click", klik);
+      th.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); klik(); }
+      });
+    });
+
+    var gemt = null;
+    try { gemt = sessionStorage.getItem(lager); } catch (e) {}
+    if (gemt) {
+      var p = gemt.split(":"), k = Number(p[0]);
+      if (ths[k] && ths[k].classList.contains("sorterbar")) sorter(k, Number(p[1]));
+    }
+  });
+})();

@@ -31,6 +31,11 @@ h3 { font-size: 15px; margin: 14px 0 8px; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--linje); vertical-align: top; }
 th { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--graa); font-weight: 600; background: #fafbfc; position: sticky; top: 0; }
+th.sorterbar { cursor: pointer; user-select: none; white-space: nowrap; }
+th.sorterbar:hover, th.sorterbar[aria-sort] { color: var(--tekst, inherit); }
+th.sorterbar::after { content: "↕"; margin-left: 4px; opacity: .3; font-size: 11px; }
+th.sorterbar[aria-sort=ascending]::after { content: "▲"; opacity: .9; }
+th.sorterbar[aria-sort=descending]::after { content: "▼"; opacity: .9; }
 td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 tr:hover td { background: #f6f9fb; }
 .tabel-wrap { overflow-x: auto; }

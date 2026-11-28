@@ -36,7 +36,7 @@
         <td><a href="{{ url_for('kontor_bruger', bid=b.id) }}">{{ b.navn or '(uden navn)' }}</a> {{ rl.badge(b.rolle) }}</td>
         <td>{{ b.email }}</td><td class="skjul-mobil">{{ b.baade or '' }}</td>
         <td>{{ b.maalere or '' }}</td>
-        <td class="skjul-mobil">{{ b.sidste_login | siden }}</td>
+        <td class="skjul-mobil" data-sort="{{ b.sidste_login or '' }}">{{ b.sidste_login | siden }}</td>
         <td>{% if not b.aktiv %}<span class="badge ukendt">inaktiv</span>{% elif not b.pw_hash %}<span class="badge ukendt">ingen kode</span>{% else %}<span class="badge online">aktiv</span>{% endif %}</td>
       </tr>
     {% endfor %}

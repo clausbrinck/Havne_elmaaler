@@ -17,7 +17,7 @@
 </div>
 {% endmacro %}
 
-{% macro gruppe(nr, label) %}<span class="badge g{{ nr }}">{{ label }}</span>{% endmacro %}
+{% macro gruppe(nr, label) %}<span class="badge g{{ nr }}" data-sort="{{ nr }}">{{ label }}</span>{% endmacro %}
 
 {% macro status(tilstand, id=None) %}<span class="badge {{ tilstand }}" {% if id %}data-status="{{ id }}"{% endif %}>{{ tilstand }}</span>{% endmacro %}
 

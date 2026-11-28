@@ -55,7 +55,7 @@
   <h2>Forbrugsgrupper og afregningsmåneder</h2>
   <form method="post">
     <input type="hidden" name="csrf" value="{{ csrf() }}"><input type="hidden" name="handling" value="kategorier">
-    <table style="max-width:520px">
+    <table style="max-width:520px" data-ikke-sorter>
       <thead><tr><th>Gruppe</th><th>Til og med kWh</th><th>Pris pr. måned (kr)</th></tr></thead>
       <tbody>
       {% for i in range(8) %}{% set k = kat[i] if i < kat|length else none %}

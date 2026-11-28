@@ -86,7 +86,7 @@
     <thead><tr><th>Måned</th><th>Måler</th><th>Båd</th><th class="n">kWh</th><th>Gruppe</th><th class="n">Pris</th></tr></thead>
     <tbody>
     {% for h in historik %}
-      <tr><td>{{ h.maaned | maaned_navn }}</td><td>{{ '%03d' % h.maaler_id }}</td><td>{{ h.baad }}</td><td class="n">{{ h.kwh | dk(1) }}</td>
+      <tr><td data-sort="{{ h.maaned }}">{{ h.maaned | maaned_navn }}</td><td>{{ '%03d' % h.maaler_id }}</td><td>{{ h.baad }}</td><td class="n">{{ h.kwh | dk(1) }}</td>
         <td>{% if h.afregnes %}{{ gr.gruppe(h.gruppe, h.label) }}{% else %}<span class="muted">ikke afregnet</span>{% endif %}</td>
         <td class="n">{{ (h.pris | dk(0)) ~ ' kr' if h.pris is not none else '–' }}</td></tr>
     {% else %}<tr><td colspan="6" class="muted">Ingen endnu.</td></tr>{% endfor %}

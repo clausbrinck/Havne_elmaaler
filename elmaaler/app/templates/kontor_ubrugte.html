@@ -37,7 +37,7 @@
           <td>{{ r.t.baad }}</td>
           <td class="skjul-mobil">{{ r.t.start_dato | dato }}</td>
           <td class="n">{{ r.kwh | dk(1) }}</td>
-          <td>{{ r.sidst_forbrug | siden }}</td>
+          <td data-sort="{{ r.sidst_forbrug or '' }}">{{ r.sidst_forbrug | siden }}</td>
           <td>{{ gr.status('online' if r.st.tilgaengelig else ('offline' if r.st.sidst_set else 'ukendt')) }}</td></tr>
       {% else %}<tr><td colspan="9" class="muted">Alle tildelte målere er i brug.</td></tr>{% endfor %}
       </tbody>
